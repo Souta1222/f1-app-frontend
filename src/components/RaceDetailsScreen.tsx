@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Flag, CheckCircle2, Trophy, Timer } from 'lucide-react';
 
-// ⚠️ YOUR IP ADDRESS
-// 🟢 NEW: Your public internet backend
+// 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
 
 interface RaceResult {
@@ -13,7 +12,7 @@ interface RaceResult {
   status: string;
   grid: number;
   laps: number;
-  time?: string; // Added optional time field if available
+  time?: string;
 }
 
 interface RaceDetailsScreenProps {
@@ -28,6 +27,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   useEffect(() => {
     // 1. Parse ID (Format: "2023-round-1")
+    if (!raceId) return;
     const parts = raceId.split('-');
     if (parts.length >= 3) {
         const year = parts[0];
@@ -41,8 +41,9 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       try {
         const [year, , round] = raceId.split('-');
         
-        // 🟢 FIX 1: Added headers to the main request
-        const res = await fetch(`${API_BASE}/race_results?year=${year}&round=${round}`, {
+        // Try Fetching
+        const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
+        const res = await fetch(url, {
             method: "GET",
             headers: {
                 "ngrok-skip-browser-warning": "true",
@@ -50,11 +51,11 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         });
         
+        let rawData = [];
         if (res.ok) {
-          const data = await res.json();
-          setResults(data);
+          rawData = await res.json();
         } else {
-           // 🟢 FIX 2: Added headers to the fallback request
+           // Fallback
            const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, {
                 method: "GET",
                 headers: {
@@ -62,14 +63,24 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     "Content-Type": "application/json"
                 }
            });
-           
-           if(resFallback.ok) {
-               const data = await resFallback.json();
-               setResults(data);
-           } else {
-               console.error("Backend Error: Could not fetch results");
-           }
+           if(resFallback.ok) rawData = await resFallback.json();
         }
+
+        // 🛡️ DATA SANITIZER (The Fix for the Blank Screen)
+        // Maps "Team" -> "team", "Driver" -> "driver", etc.
+        const cleanData = rawData.map((item: any) => ({
+            position: parseInt(item.Position || item.position || '0'),
+            driver: item.Driver || item.driver || 'Unknown Driver',
+            team: item.Team || item.team || 'Unknown Team',
+            points: parseFloat(item.Points || item.points || '0'),
+            status: item.status || item.Status || 'Finished',
+            grid: parseInt(item.Grid || item.grid || '0'),
+            laps: parseInt(item.Laps || item.laps || '0'),
+            time: item.Time || item.time || ''
+        }));
+
+        setResults(cleanData);
+
       } catch (e) {
         console.error("Error fetching results", e);
       }
@@ -79,19 +90,24 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     fetchResults();
   }, [raceId]);
 
-  // Helper for Team Colors (Strip)
+  // Helper for Team Colors
   const getTeamColor = (teamName: string) => {
+    if (!teamName) return '#94a3b8'; // Safety check
     const t = teamName.toLowerCase();
     if (t.includes('red bull')) return '#3671C6';
     if (t.includes('ferrari')) return '#D92A32';
     if (t.includes('mercedes')) return '#00A19C';
     if (t.includes('mclaren')) return '#FF8000';
     if (t.includes('aston')) return '#006F62';
+    if (t.includes('alpine')) return '#0090FF';
+    if (t.includes('williams')) return '#005AFF';
+    if (t.includes('haas')) return '#B6BABD';
+    if (t.includes('kick') || t.includes('sauber')) return '#52E252';
+    if (t.includes('rb') || t.includes('alpha')) return '#6692FF';
     return '#94a3b8'; // Default Grey
   };
 
   return (
-    // 🛡️ THEME: Silver Tarmac Background (Matches Home & Selection)
     <div 
       className="fixed inset-0 z-[1000] overflow-y-auto pb-24 font-sans w-full h-full"
       style={{ 
@@ -101,7 +117,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         color: '#1e293b' 
       }}
     >
-      {/* Header: Dark Red Gradient */}
+      {/* Header */}
       <div 
         className="sticky top-0 z-20 shadow-lg flex items-center gap-4 px-4 py-4"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
@@ -139,7 +155,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
           results.map((result, index) => (
             <div 
               key={index}
-              // Card: White background, Shadow, Border
               className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all active:scale-[0.99]"
               style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
             >
@@ -163,10 +178,9 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className="font-mono font-bold text-sm text-green-600">+{result.points} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span></div>
                 
                 <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
-                  {/* Handle Case Sensitivity for Status */}
-                  {result.status.toLowerCase() === 'finished' || result.status.includes('+') ? (
+                  {(result.status?.toLowerCase() === 'finished' || result.status?.includes('+')) ? (
                     <span className="text-slate-500 font-medium flex items-center gap-1">
-                         {result.status.includes('+') ? result.status : <><Flag className="w-3 h-3 text-slate-400" /> Finished</>}
+                          {result.status.includes('+') ? result.status : <><Flag className="w-3 h-3 text-slate-400" /> Finished</>}
                     </span>
                   ) : (
                     <span className="text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded uppercase tracking-wider text-[9px]">
