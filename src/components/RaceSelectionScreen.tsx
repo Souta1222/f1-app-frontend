@@ -91,7 +91,7 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
         <div className="px-5 py-6">
           <div className="flex justify-between items-end mb-4">
              <h1 className="text-white text-2xl font-black italic tracking-tighter">
-                RACE<span className="text-red-500">CALENDAR</span>
+                RACE<span className="text-red-500">CALENDAR V3</span>
              </h1>
              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest border border-white/20 px-2 py-1 rounded-full">
                 Season {selectedSeason}
