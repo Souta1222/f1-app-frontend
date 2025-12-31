@@ -43,7 +43,13 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
       setLoading(true);
       try {
         const url = `${API_BASE}/races/${selectedSeason}`;
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            "ngrok-skip-browser-warning": "true", // <--- THIS MAGIC KEY BYPASSES THE WARNING
+            "Content-Type": "application/json"
+          }
+        });
         
         if (res.ok) {
           const data = await res.json();
