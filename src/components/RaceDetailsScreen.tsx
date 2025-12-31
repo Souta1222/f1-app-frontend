@@ -39,18 +39,30 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        // Try the query param format first (more common for this backend)
-        // If your backend specifically uses /race/ID/results, revert this line.
         const [year, , round] = raceId.split('-');
-        const res = await fetch(`${API_BASE}/race_results?year=${year}&round=${round}`);
+        
+        // 🟢 FIX 1: Added headers to the main request
+        const res = await fetch(`${API_BASE}/race_results?year=${year}&round=${round}`, {
+            method: "GET",
+            headers: {
+                "ngrok-skip-browser-warning": "true",
+                "Content-Type": "application/json"
+            }
+        });
         
         if (res.ok) {
           const data = await res.json();
-          // Map backend data to UI format if needed, or use directly
           setResults(data);
         } else {
-           // Fallback to the path format if the query param fails
-           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
+           // 🟢 FIX 2: Added headers to the fallback request
+           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, {
+                method: "GET",
+                headers: {
+                    "ngrok-skip-browser-warning": "true",
+                    "Content-Type": "application/json"
+                }
+           });
+           
            if(resFallback.ok) {
                const data = await resFallback.json();
                setResults(data);
