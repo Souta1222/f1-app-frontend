@@ -90,7 +90,10 @@ export function ChatWidget() {
     try {
       const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true' // 🟢 ADDED: This fixes the connection
+        }, 
         body: JSON.stringify({ message: userMsg.text })
       });
       
