@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 // --- CONFIG ---
-// 🟢 NEW: Your public internet backend
+// 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 interface Message {
@@ -92,12 +92,19 @@ export function ChatWidget() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true' // 🟢 ADDED: This fixes the connection
+          'ngrok-skip-browser-warning': 'true' // 🟢 Fixes Connection
         }, 
         body: JSON.stringify({ message: userMsg.text })
       });
       
       const data = await res.json();
+      
+      // 🟢 NEW: BROADCAST SIGNAL
+      // If the user asked to update news, tell the Home Screen to refresh!
+      if (textToSend.toLowerCase().includes("update news")) {
+        console.log("📣 ChatWidget: News updated! Broadcasting signal...");
+        window.dispatchEvent(new Event('newsUpdated'));
+      }
       
       const botMsg: Message = { 
         id: Date.now() + 1, 
@@ -108,6 +115,7 @@ export function ChatWidget() {
       setMessages(prev => [...prev, botMsg]);
       
     } catch (e) {
+      console.error(e);
       const errorMsg: Message = { 
         id: Date.now() + 1, 
         text: "⚠️ Connection Error. Ensure app.py is running.", 
@@ -133,7 +141,6 @@ export function ChatWidget() {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        // 🛡️ SAFETY: Using inline styles for positioning to guarantee visibility
         style={{ 
           position: 'fixed', 
           bottom: '100px', 
@@ -151,7 +158,6 @@ export function ChatWidget() {
   // --- OPEN STATE (Chat Window) ---
   return (
     <div 
-      // 🛡️ SAFETY: Using inline styles for Z-Index
       style={{ zIndex: 99999 }}
       className="fixed bottom-24 inset-x-4 md:inset-auto md:right-6 md:w-[400px] h-[65vh] max-h-[600px] bg-neutral-950 border border-neutral-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300"
     >
@@ -236,7 +242,6 @@ export function ChatWidget() {
             onKeyDown={e => e.key === 'Enter' && handleSend()}
             disabled={loading} 
           />
-          {/* Force Button Center with Transform */}
           <button 
             onClick={() => handleSend()}
             disabled={loading || !input.trim()}
