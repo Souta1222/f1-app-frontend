@@ -25,7 +25,15 @@ export function FanPulseWidget() {
 
   const fetchRatings = async () => {
     try {
-      const res = await fetch(`${API_BASE}/community/ratings`);
+      // 🟢 FIX: Added headers to bypass Ngrok warning
+      const res = await fetch(`${API_BASE}/community/ratings`, {
+        method: "GET",
+        headers: {
+            "ngrok-skip-browser-warning": "true",
+            "Content-Type": "application/json"
+        }
+      });
+
       if (res.ok) {
         const data = await res.json();
         setRatings(data);
@@ -44,7 +52,11 @@ export function FanPulseWidget() {
     try {
       await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            // 🟢 FIX: Added header here too
+            'ngrok-skip-browser-warning': 'true',
+            'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           driver_name: selectedDriver.driver_name,
           rating: userRating,
@@ -55,6 +67,8 @@ export function FanPulseWidget() {
       setIsRatingOpen(false);
       setUserComment("");
       setUserName("");
+      
+      // 🟢 This will now work because fetchRatings has the header!
       fetchRatings(); 
     } catch (e) {
       alert("Failed to submit rating");
