@@ -1,21 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Star, MessageCircle, Send, X, User, ChevronDown } from 'lucide-react';
+import { Star, MessageCircle, Send, X, User, ChevronDown, Building2 } from 'lucide-react';
 import { drivers } from '../lib/data';
 
-// 🟢 NEW: Your public internet backend
+// 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-interface DriverRating {
-  driver_name: string;
+// --- DATA: F1 TEAMS ---
+const F1_TEAMS = [
+  { id: 'rb', name: 'Red Bull Racing' },
+  { id: 'mer', name: 'Mercedes' },
+  { id: 'fer', name: 'Ferrari' },
+  { id: 'mcl', name: 'McLaren' },
+  { id: 'ast', name: 'Aston Martin' },
+  { id: 'alp', name: 'Alpine' },
+  { id: 'wil', name: 'Williams' },
+  { id: 'vcarb', name: 'RB (AlphaTauri)' },
+  { id: 'kick', name: 'Kick Sauber' },
+  { id: 'haas', name: 'Haas F1 Team' }
+];
+
+interface RatingData {
+  driver_name: string; // Used for both Driver and Team names
   avg_rating: number;
   total_votes: number;
   latest_comments: { user: string; rating: number; text: string; date: string }[];
 }
 
 export function FanPulseWidget() {
-  const [ratings, setRatings] = useState<DriverRating[]>([]);
-  const [selectedDriver, setSelectedDriver] = useState<DriverRating | null>(null);
+  const [ratings, setRatings] = useState<RatingData[]>([]);
+  const [selectedEntity, setSelectedEntity] = useState<RatingData | null>(null);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'drivers' | 'teams'>('drivers'); // 🟢 NEW: Tab State
   
   const [userRating, setUserRating] = useState(10);
   const [userComment, setUserComment] = useState("");
@@ -23,9 +38,9 @@ export function FanPulseWidget() {
 
   const allDriversList = Object.values(drivers);
 
+  // --- FETCH RATINGS (With Ngrok Header) ---
   const fetchRatings = async () => {
     try {
-      // 🟢 FIX: Added headers to bypass Ngrok warning
       const res = await fetch(`${API_BASE}/community/ratings`, {
         method: "GET",
         headers: {
@@ -33,7 +48,6 @@ export function FanPulseWidget() {
             "Content-Type": "application/json"
         }
       });
-
       if (res.ok) {
         const data = await res.json();
         setRatings(data);
@@ -47,18 +61,18 @@ export function FanPulseWidget() {
     fetchRatings();
   }, []);
 
+  // --- SUBMIT RATING ---
   const handleSubmit = async () => {
-    if (!selectedDriver) return;
+    if (!selectedEntity) return;
     try {
       await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
         headers: { 
-            // 🟢 FIX: Added header here too
             'ngrok-skip-browser-warning': 'true',
             'Content-Type': 'application/json' 
         },
         body: JSON.stringify({
-          driver_name: selectedDriver.driver_name,
+          driver_name: selectedEntity.driver_name, // Backend field is generic
           rating: userRating,
           comment: userComment || "No comment",
           username: userName || "Anonymous Fan"
@@ -67,21 +81,19 @@ export function FanPulseWidget() {
       setIsRatingOpen(false);
       setUserComment("");
       setUserName("");
-      
-      // 🟢 This will now work because fetchRatings has the header!
       fetchRatings(); 
     } catch (e) {
       alert("Failed to submit rating");
     }
   };
 
-  const handleDriverChange = (driverName: string) => {
-    const existingStats = ratings.find(r => r.driver_name === driverName);
+  const handleEntityChange = (name: string) => {
+    const existingStats = ratings.find(r => r.driver_name === name);
     if (existingStats) {
-        setSelectedDriver(existingStats);
+        setSelectedEntity(existingStats);
     } else {
-        setSelectedDriver({
-            driver_name: driverName,
+        setSelectedEntity({
+            driver_name: name,
             avg_rating: 0,
             total_votes: 0,
             latest_comments: []
@@ -89,28 +101,56 @@ export function FanPulseWidget() {
     }
   };
 
+  // --- FILTERING LOGIC ---
+  const getFilteredRatings = () => {
+    // Get list of valid names for the current tab
+    const validNames = activeTab === 'drivers' 
+        ? allDriversList.map(d => d.name)
+        : F1_TEAMS.map(t => t.name);
+
+    // Return only ratings that match the current tab's list
+    return ratings.filter(r => validNames.includes(r.driver_name));
+  };
+
+  const displayRatings = getFilteredRatings().slice(0, 3);
+
   return (
-    // LIGHT THEME CARD
-    <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 mb-6">
+    <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 mb-6 transition-all">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-neutral-900 font-black text-lg flex items-center gap-2 uppercase tracking-tight">
           <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-          F1 Fan Pulse
+          Fan Pulse
         </h2>
-        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-          Community
-        </span>
+        
+        {/* 🟢 NEW: Toggle Switch */}
+        <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+            <button 
+                onClick={() => setActiveTab('drivers')}
+                className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${activeTab === 'drivers' ? 'bg-white shadow text-red-600' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+                Drivers
+            </button>
+            <button 
+                onClick={() => setActiveTab('teams')}
+                className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all ${activeTab === 'teams' ? 'bg-white shadow text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+                Teams
+            </button>
+        </div>
       </div>
 
       {/* --- LEADERBOARD --- */}
-      <div className="space-y-2">
-        {ratings.length === 0 ? (
-          <div className="text-center text-gray-400 py-4 text-sm font-medium">No ratings yet. Be the first!</div>
+      <div className="space-y-2 min-h-[100px]">
+        {displayRatings.length === 0 ? (
+          <div className="text-center text-gray-400 py-6 text-xs font-bold uppercase tracking-wide bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            No {activeTab} ratings yet.<br/>Be the first to vote!
+          </div>
         ) : (
-          ratings.slice(0, 3).map((driver, idx) => (
+          displayRatings.map((item, idx) => (
             <div 
-              key={driver.driver_name}
-              onClick={() => { setSelectedDriver(driver); setIsRatingOpen(true); }}
+              key={item.driver_name}
+              onClick={() => { setSelectedEntity(item); setIsRatingOpen(true); }}
               className="bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all p-3 rounded-xl flex items-center justify-between cursor-pointer group active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
@@ -118,23 +158,25 @@ export function FanPulseWidget() {
                   #{idx + 1}
                 </span>
                 <div>
-                  {/* BOLD BLACK FONT */}
-                  <div className="text-neutral-900 font-black text-sm uppercase tracking-wide">{driver.driver_name}</div>
+                  <div className="text-neutral-900 font-black text-sm uppercase tracking-wide truncate max-w-[140px]">
+                    {item.driver_name}
+                  </div>
                   <div className="text-gray-500 text-[10px] font-bold flex items-center gap-1">
-                    <User className="w-3 h-3" /> {driver.total_votes} votes
+                    {activeTab === 'drivers' ? <User className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
+                    {item.total_votes} votes
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="text-xl font-black text-neutral-900">{driver.avg_rating}</div>
+                  <div className="text-xl font-black text-neutral-900">{item.avg_rating}</div>
                   <div className="text-[9px] text-gray-400 font-bold uppercase">Avg</div>
                 </div>
                 <div className={`w-1.5 h-8 rounded-full ${
-                  driver.avg_rating >= 9 ? 'bg-green-500' :
-                  driver.avg_rating >= 7 ? 'bg-blue-500' : 
-                  driver.avg_rating >= 5 ? 'bg-yellow-500' : 'bg-red-500'
+                  item.avg_rating >= 9 ? 'bg-green-500' :
+                  item.avg_rating >= 7 ? 'bg-blue-500' : 
+                  item.avg_rating >= 5 ? 'bg-yellow-500' : 'bg-red-500'
                 }`} />
               </div>
             </div>
@@ -142,22 +184,26 @@ export function FanPulseWidget() {
         )}
       </div>
 
-      {/* --- BUTTON --- */}
+      {/* --- ACTION BUTTON --- */}
       <button 
         onClick={() => { 
-          if (!selectedDriver) handleDriverChange(allDriversList[0].name);
+          // Default to first item if nothing selected
+          const firstOption = activeTab === 'drivers' ? allDriversList[0].name : F1_TEAMS[0].name;
+          if (!selectedEntity || (activeTab === 'drivers' && !allDriversList.find(d => d.name === selectedEntity.driver_name))) {
+             handleEntityChange(firstOption);
+          }
           setIsRatingOpen(true);
         }}
-        className="w-full mt-4 bg-neutral-900 hover:bg-black text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-lg"
+        className={`w-full mt-4 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-lg ${activeTab === 'drivers' ? 'bg-neutral-900 hover:bg-black' : 'bg-blue-900 hover:bg-blue-950'}`}
       >
         <MessageCircle className="w-4 h-4" />
-        Rate a Driver
+        Rate a {activeTab === 'drivers' ? 'Driver' : 'Team'}
       </button>
 
-      {/* --- MODAL (Light Theme) --- */}
-      {isRatingOpen && selectedDriver && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative animate-in slide-in-from-bottom-10 fade-in duration-300">
+      {/* --- MODAL --- */}
+      {isRatingOpen && selectedEntity && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative animate-in slide-in-from-bottom-10 duration-300">
             
             <button 
               onClick={() => setIsRatingOpen(false)}
@@ -166,19 +212,24 @@ export function FanPulseWidget() {
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight mb-1">Rate Driver</h3>
-            <p className="text-gray-500 text-xs font-bold mb-6">How did {selectedDriver.driver_name} perform?</p>
+            <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight mb-1">
+                Rate {activeTab === 'drivers' ? 'Driver' : 'Team'}
+            </h3>
+            <p className="text-gray-500 text-xs font-bold mb-6">
+                How did {selectedEntity.driver_name} perform?
+            </p>
             
             {/* Dropdown */}
             <div className="relative mb-6">
                 <select 
-                    value={selectedDriver.driver_name}
-                    onChange={(e) => handleDriverChange(e.target.value)}
+                    value={selectedEntity.driver_name}
+                    onChange={(e) => handleEntityChange(e.target.value)}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-neutral-900 font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                    {allDriversList.map(d => (
-                        <option key={d.id} value={d.name}>{d.name}</option>
-                    ))}
+                    {activeTab === 'drivers' 
+                        ? allDriversList.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                        : F1_TEAMS.map(t => <option key={t.id} value={t.name}>{t.name}</option>)
+                    }
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
@@ -187,7 +238,9 @@ export function FanPulseWidget() {
             <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
               <div className="flex justify-between mb-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">Score</label>
-                <span className="text-3xl font-black text-neutral-900">{userRating}</span>
+                <span className={`text-3xl font-black ${userRating >= 8 ? 'text-green-600' : userRating >= 5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {userRating}
+                </span>
               </div>
               <input 
                 type="range" 
@@ -196,6 +249,11 @@ export function FanPulseWidget() {
                 onChange={(e) => setUserRating(Number(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
               />
+              <div className="flex justify-between text-[10px] font-bold text-gray-400 mt-2 uppercase">
+                <span>Disaster</span>
+                <span>Average</span>
+                <span>Masterclass</span>
+              </div>
             </div>
 
             {/* Inputs */}
@@ -217,10 +275,10 @@ export function FanPulseWidget() {
 
             <button 
               onClick={handleSubmit}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider"
+              className={`w-full text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider ${activeTab === 'drivers' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
               <Send className="w-4 h-4" />
-              Submit
+              Submit Rating
             </button>
           </div>
         </div>
