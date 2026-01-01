@@ -57,20 +57,34 @@ export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
   }, [nextRace]);
 
   // --- FETCH NEWS ---
-  useEffect(() => {
+ // --- FETCH NEWS ---
+ useEffect(() => {
+    // 1. Define the fetch function
     const fetchNews = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/news/latest`);
-        if (res.ok) {
-          const data = await res.json();
-          setRealNews(data.slice(0, 5));
+        try {
+            const res = await fetch(`${API_BASE}/news/latest`, {
+                headers: { "ngrok-skip-browser-warning": "true" } 
+            });
+            const data = await res.json();
+            setRealNews(data); // 🟢 FIXED: Changed setNews to setRealNews
+        } catch (e) {
+            console.error("News load failed", e);
         }
-      } catch (e) {
-        console.error("Failed to fetch news", e);
-      }
     };
+
+    // 2. Load initially
     fetchNews();
-  }, []);
+
+    // 3. LISTEN for the Chatbot's signal
+    const handleUpdate = () => {
+        console.log("👂 Heard update signal! Refreshing news...");
+        fetchNews();
+    };
+    window.addEventListener('newsUpdated', handleUpdate);
+
+    // 4. Cleanup when leaving the screen
+    return () => window.removeEventListener('newsUpdated', handleUpdate);
+}, []);
   
   if (!nextRace) return null;
 
