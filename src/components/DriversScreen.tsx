@@ -69,9 +69,14 @@ export function DriversScreen() {
       try {
         const response = await fetch(`${API_BASE}/identify-driver`, {
           method: 'POST',
+          // 🟢 ADD THIS HEADERS BLOCK
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+          // ⚠️ NOTE: Do NOT add 'Content-Type' here! 
+          // The browser automatically sets it for File Uploads.
           body: formData,
         });
-
         const data = await response.json();
 
         if (data.success && data.driver_id) {
