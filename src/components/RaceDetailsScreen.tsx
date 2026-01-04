@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Flag, Trophy, Calendar, MapPin } from 'lucide-react';
 
 // 🟢 YOUR BACKEND URL
-const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
+const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
 
 // --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
@@ -24,8 +24,6 @@ interface RaceResult {
   points?: number;
   wins?: number;
   status: string;
-  grid?: number;
-  laps?: number;
 }
 
 interface RaceDetailsScreenProps {
@@ -36,7 +34,7 @@ interface RaceDetailsScreenProps {
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [raceInfo, setRaceInfo] = useState({ year: '', round: '' });
+  const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
   const [isUpcoming, setIsUpcoming] = useState(false);
 
   useEffect(() => {
@@ -50,7 +48,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     }
 
     // 2. Safe ID Parsing
-    const safeId = String(raceId || ''); // 🛡️ Prevent undefined crash
+    const safeId = String(raceId || '');
     if (!safeId) return;
 
     const parts = safeId.split('-');
@@ -68,12 +66,12 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         setIsUpcoming(true);
         setResults([]); 
         setLoading(false);
-        return; // 🛑 STOP: Do not fetch data for 2026
-    } else {
-        setIsUpcoming(false);
-    }
+        return; 
+    } 
+    
+    setIsUpcoming(false);
 
-    // 4. Fetch Details (For 2023/2024)
+    // 4. Fetch Details
     const fetchResults = async () => {
       setLoading(true);
       try {
@@ -84,36 +82,37 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         };
 
         const res = await fetch(url, { method: "GET", headers });
-        
-        let rawData = null;
+        let rawData: any = null;
+
         if (res.ok) {
            rawData = await res.json();
         } else {
-           // Fallback with HEADERS (Fixes 403 Forbidden)
+           // Fallback
            try {
              const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
              if (resFallback.ok) rawData = await resFallback.json();
-           } catch (err) {
-             console.log("Fallback failed");
-           }
+           } catch (err) { console.log("Fallback failed"); }
         }
 
-        // 🛡️ CRASH PROTECTION: Filter out nulls and bad data
-        if (Array.isArray(rawData) && (rawData as any[]).length > 0) {
-          // 👇 CAST rawData AS AN ARRAY HERE
-          const cleanData = (rawData as any[])
-              .filter((item: any) => item && typeof item === 'object') // Remove nulls
-              .map((item: any) => ({
-                  position: parseInt(item.Position || item.position || '0'),
-                  driver: String(item.Driver || item.driver || 'Unknown Driver'),
-                  team: String(item.Team || item.team || 'Unknown Team'),
-                  points: parseFloat(item.Points || item.points || '0'),
-                  status: String(item.status || item.Status || 'Finished'),
-              }));
-          setResults(cleanData);
-      } else {
-          setResults([]);
-      }
+        // 🛡️ CRASH PROTECTION: Manual Loop
+        const cleanData: RaceResult[] = [];
+        if (Array.isArray(rawData)) {
+            for (const item of rawData) {
+                if (item && typeof item === 'object') {
+                    cleanData.push({
+                        position: parseInt(item.Position || item.position || '0'),
+                        driver: String(item.Driver || item.driver || 'Unknown'),
+                        team: String(item.Team || item.team || 'Unknown'),
+                        points: parseFloat(item.Points || item.points || '0'),
+                        status: String(item.status || item.Status || 'Finished'),
+                        wins: item.wins ? parseInt(item.wins) : undefined
+                    });
+                }
+            }
+            setResults(cleanData);
+        } else {
+            setResults([]);
+        }
 
       } catch (e) {
         console.error("Error fetching results", e);
@@ -218,12 +217,16 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
               </div>
 
-              {/* Stats */}
+              {/* Stats - NOW SAFER */}
               <div className="text-right">
                 {result.wins !== undefined ? (
-                    <div className="font-mono font-bold text-sm text-blue-600">{result.wins} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span></div>
+                    <div className="font-mono font-bold text-sm text-blue-600">
+                        {result.wins || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span>
+                    </div>
                 ) : (
-                    <div className="font-mono font-bold text-sm text-green-600">+{result.points} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span></div>
+                    <div className="font-mono font-bold text-sm text-green-600">
+                        +{result.points || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span>
+                    </div>
                 )}
                 
                 <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
