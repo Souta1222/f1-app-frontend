@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Flag, Trophy, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Flag, Trophy } from 'lucide-react'; // ⚠️ Removed Calendar/MapPin to test if they are the crasher
 
 // 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
@@ -35,22 +35,22 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [isUpcoming, setIsUpcoming] = useState(false);
+  const [viewMode, setViewMode] = useState<'results' | 'upcoming' | 'error'>('results');
 
   useEffect(() => {
-    // 1. Handle 2025 Static Summary
-    if (raceId === '2025-summary') {
-        setRaceInfo({ year: '2025', round: 'Season Standings' });
-        setResults(RESULTS_2025);
-        setLoading(false);
-        setIsUpcoming(false);
-        return;
-    }
-
-    // 2. Safe ID Parsing
+    // 1. Safe ID Parsing
     const safeId = String(raceId || '');
     if (!safeId) return;
 
+    // 2. Check for 2025 Summary
+    if (safeId === '2025-summary') {
+        setRaceInfo({ year: '2025', round: 'Season Standings' });
+        setResults(RESULTS_2025);
+        setViewMode('results');
+        return;
+    }
+
+    // 3. Parse ID
     const parts = safeId.split('-');
     let year = '2024';
     let round = '1';
@@ -61,17 +61,16 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         setRaceInfo({ year, round });
     }
 
-    // 3. Handle Upcoming Races (2026)
+    // 4. Handle 2026 (Upcoming) IMMEDIATELY
     if (year === '2026') {
-        setIsUpcoming(true);
-        setResults([]); 
-        setLoading(false);
-        return; 
-    } 
-    
-    setIsUpcoming(false);
+        setViewMode('upcoming');
+        setResults([]);
+        return; // 🛑 Stop execution here.
+    }
 
-    // 4. Fetch Details
+    // 5. Fetch Data (Only for 2023/2024)
+    setViewMode('results'); // Default to results view
+    
     const fetchResults = async () => {
       setLoading(true);
       try {
@@ -160,7 +159,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {isUpcoming ? 'Race Preview' : 'Race Results'}
+            {viewMode === 'upcoming' ? 'Race Preview' : 'Race Results'}
           </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
             {raceInfo.year} • {raceInfo.round}
@@ -170,16 +169,16 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {isUpcoming ? (
-            // 🟢 2026 View (Safe Mode)
+        {viewMode === 'upcoming' ? (
+            // 🟢 2026 View (SIMPLIFIED - No complex icons)
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
-                <Calendar className="w-16 h-16 text-blue-500 mb-4" />
+                <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
                 <p className="text-sm text-neutral-500 mb-6">
                     This race hasn't started yet. AI predictions will be available 3 days before the race.
                 </p>
                 <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
-                    <MapPin className="w-4 h-4" />
+                    <span>📍</span>
                     See Circuit Map
                 </div>
             </div>
@@ -217,7 +216,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
               </div>
 
-              {/* Stats - NOW SAFER */}
+              {/* Stats */}
               <div className="text-right">
                 {result.wins !== undefined ? (
                     <div className="font-mono font-bold text-sm text-blue-600">
