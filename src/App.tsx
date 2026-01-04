@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Home, Calendar, Users, Trophy } from 'lucide-react';
 import { HomeScreen } from './components/HomeScreen';
-import { PredictionResultsScreen } from './components/PredictionResultsScreen';
 import { RaceSelectionScreen } from './components/RaceSelectionScreen';
 import { DriversScreen } from './components/DriversScreen';
 import { ConstructorsScreen } from './components/ConstructorsScreen';
 import { RaceDetailsScreen } from './components/RaceDetailsScreen';
 import { ChatWidget } from './components/ChatWidget';
-// Check this path: If you put ThemeContext in src/context, change this import!
-import { ThemeProvider } from './components/ThemeContext.tsx'; 
+import { ThemeProvider } from './components/ThemeContext'; // removed .tsx extension
 
 type Screen = 'home' | 'races' | 'drivers' | 'constructors';
 
@@ -27,20 +25,12 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    // --- SMART ROUTING LOGIC ---
+    // --- SMART ROUTING LOGIC (FIXED) ---
     if (selectedRaceId) {
-      if (selectedRaceId.startsWith('2023') || selectedRaceId.startsWith('2024')) {
-        return (
-          <RaceDetailsScreen 
-            raceId={selectedRaceId} 
-            onBack={() => setSelectedRaceId(null)} 
-          />
-        );
-      }
-      
-      // Default to Prediction screen for 2025/2026
+      // 🟢 CHANGE: We now send EVERY race ID to the RaceDetailsScreen
+      // This ensures 2025 and 2026 use the file we just fixed.
       return (
-        <PredictionResultsScreen 
+        <RaceDetailsScreen 
           raceId={selectedRaceId} 
           onBack={() => setSelectedRaceId(null)} 
         />
@@ -57,17 +47,13 @@ export default function App() {
   };
 
   return (
-    // 1. ThemeProvider wraps the ENTIRE app
     <ThemeProvider>
       <div className="min-h-screen bg-neutral-950 text-white pb-20 relative">
         
-        {/* 2. Main Content */}
         {renderScreen()}
         
-        {/* 3. Floating Chat Widget */}
         <ChatWidget />
 
-        {/* 4. Bottom Navigation */}
         {!selectedRaceId && (
           <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-40">
             <div className="flex justify-around items-center h-16 max-w-md mx-auto">
