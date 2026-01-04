@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-// 🟢 SAFE MODE: Defining API here to prevent import errors
+// 🟢 SAFE MODE: Config defined locally
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- STATIC DATA: 2025 RESULTS ---
+// --- STATIC DATA ---
 const RESULTS_2025 = [
   { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, status: "Active" },
   { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, status: "Active" },
@@ -12,7 +12,7 @@ const RESULTS_2025 = [
   { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, status: "Active" },
   { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, status: "Active" },
   { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, status: "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, status: "Active" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", "wins": 0, status: "Active" },
   { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, "status": "Active" }
 ];
 
@@ -34,10 +34,10 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [viewMode, setViewMode] = useState<'results' | 'upcoming'>('results');
+  const [isUpcoming, setIsUpcoming] = useState(false);
 
   useEffect(() => {
-    // 1. Safety Check: Ensure ID exists
+    // 1. Safety Check
     const safeId = String(raceId || '');
     if (!safeId) return;
 
@@ -45,7 +45,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     if (safeId === '2025-summary') {
         setRaceInfo({ year: '2025', round: 'Season Standings' });
         setResults(RESULTS_2025);
-        setViewMode('results');
+        setLoading(false);
+        setIsUpcoming(false);
         return;
     }
 
@@ -62,13 +63,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
     // 4. Handle 2026 (Upcoming)
     if (year === '2026') {
-        setViewMode('upcoming');
+        setIsUpcoming(true);
         setResults([]);
+        setLoading(false);
         return; 
     }
     
-    // 5. Fetch Data (Only for 2023/2024)
-    setViewMode('results');
+    // 5. Fetch Data
+    setIsUpcoming(false);
     
     const fetchResults = async () => {
       setLoading(true);
@@ -85,14 +87,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         if (res.ok) {
            rawData = await res.json();
         } else {
-           // Fallback fetch
+           // Fallback
            try {
              const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
              if (resFallback.ok) rawData = await resFallback.json();
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // 🛡️ Safe Data Processing
+        // 🛡️ Data Sanitization
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -154,12 +156,11 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             onClick={onBack} 
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md"
         >
-          {/* 🟢 CHANGED: Using Emoji instead of Icon to prevent crash */}
           <span className="text-xl">⬅️</span>
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {viewMode === 'upcoming' ? 'Race Preview' : 'Race Results'}
+            {isUpcoming ? 'Race Preview' : 'Race Results'}
           </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
             {raceInfo.year} • {raceInfo.round}
@@ -169,8 +170,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {viewMode === 'upcoming' ? (
-            // 🟢 2026 View (Pure HTML/CSS - No External Components)
+        {isUpcoming ? (
+            // 🟢 2026 View
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
