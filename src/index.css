@@ -1234,6 +1234,10 @@
     background-color: var(--color-red-600);
   }
 
+  .bg-red-500 {
+    background-color: #a10101;
+  }
+
   .bg-red-600\/20 {
     background-color: color-mix(in srgb, oklch(.577 .245 27.325) 20%, transparent);
   }
@@ -2249,6 +2253,54 @@
   .dark\:bg-destructive\/60:is(.dark *) {
     background-color: var(--destructive);
   }
+
+  /* Add these dark mode utilities */
+  .dark .dark\:bg-gray-800 {
+    background-color: #1f2937;
+  }
+
+  .dark .dark\:bg-gray-700 {
+    background-color: #374151;
+  }
+
+  .dark .dark\:text-white {
+    color: white;
+  }
+
+  .dark .dark\:text-gray-300 {
+    color: #d1d5db;
+  }
+
+  .dark .dark\:text-gray-400 {
+    color: #9ca3af;
+  }
+
+  .dark .dark\:border-gray-700 {
+    border-color: #374151;
+  }
+
+  .dark .dark\:border-gray-600 {
+    border-color: #4b5563;
+  }
+
+
+   .dark .dark\:bg-blue-700 {
+    background-color: #1d4ed8;
+   }
+  
+   .dark .dark\:bg-neutral-900 {
+    background-color: #181818;
+   }
+
+
+   .dark .dark\:bg-neutral-500 {
+    background-color: #fafafa;
+   }
+   
+  .dark .dark\:bg-red-600 {
+    background-color: oklch(.577 .245 27.325);
+   }
+
 
   @supports (color: color-mix(in lab, red, red)) {
     .dark\:bg-destructive\/60:is(.dark *) {

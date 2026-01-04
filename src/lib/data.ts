@@ -56,30 +56,48 @@ export interface Constructor {
 }
 
 // ==========================================
+// TEAMS DATA (for Fan Pulse ratings)
+// ==========================================
+
+export const teams = {
+  'McLaren': { id: 'mclaren', name: 'McLaren' },
+  'Mercedes': { id: 'mercedes', name: 'Mercedes' },
+  'Red Bull Racing': { id: 'red-bull', name: 'Red Bull Racing' },
+  'Ferrari': { id: 'ferrari', name: 'Ferrari' },
+  'Williams': { id: 'williams', name: 'Williams' },
+  'Racing Bulls': { id: 'rb', name: 'Racing Bulls' },
+  'Aston Martin': { id: 'aston-martin', name: 'Aston Martin' },
+  'Haas F1 Team': { id: 'haas', name: 'Haas F1 Team' },
+  'Kick Sauber': { id: 'sauber', name: 'Kick Sauber' },
+  'Alpine': { id: 'alpine', name: 'Alpine' }
+};
+
+
+// ==========================================
 // 2. DATA: DRIVERS
 // ==========================================
 
 export const drivers: Record<string, Driver> = {
-  VER: { id: 'VER', name: 'Max Verstappen', shortName: 'VER', team: 'Red Bull Racing', teamColor: '#3671C6', number: 1, nationality: 'Dutch', status: 'active', stats: { championships: 3, wins: 54, podiums: 104, poles: 38 } },
-  NOR: { id: 'NOR', name: 'Lando Norris', shortName: 'NOR', team: 'McLaren', teamColor: '#FF8000', number: 4, nationality: 'British', status: 'active', stats: { championships: 0, wins: 2, podiums: 21, poles: 4 } },
-  HAM: { id: 'HAM', name: 'Lewis Hamilton', shortName: 'HAM', team: 'Mercedes', teamColor: '#27F4D2', number: 44, nationality: 'British', status: 'active', stats: { championships: 7, wins: 105, podiums: 197, poles: 104 } },
-  LEC: { id: 'LEC', name: 'Charles Leclerc', shortName: 'LEC', team: 'Ferrari', teamColor: '#E8002D', number: 16, nationality: 'Monégasque', status: 'active', stats: { championships: 0, wins: 5, podiums: 35, poles: 25 } },
-  SAI: { id: 'SAI', name: 'Carlos Sainz', shortName: 'SAI', team: 'Ferrari', teamColor: '#E8002D', number: 55, nationality: 'Spanish', status: 'active', stats: { championships: 0, wins: 3, podiums: 23, poles: 5 } },
-  RUS: { id: 'RUS', name: 'George Russell', shortName: 'RUS', team: 'Mercedes', teamColor: '#27F4D2', number: 63, nationality: 'British', status: 'active', stats: { championships: 0, wins: 2, podiums: 12, poles: 3 } },
-  PIA: { id: 'PIA', name: 'Oscar Piastri', shortName: 'PIA', team: 'McLaren', teamColor: '#FF8000', number: 81, nationality: 'Australian', status: 'active', stats: { championships: 0, wins: 2, podiums: 10, poles: 0 } },
-  PER: { id: 'PER', name: 'Sergio Perez', shortName: 'PER', team: 'Red Bull Racing', teamColor: '#3671C6', number: 11, nationality: 'Mexican', status: 'active', stats: { championships: 0, wins: 6, podiums: 39, poles: 3 } },
+  NOR: { id: 'NOR', name: 'Lando Norris', shortName: 'NOR', team: 'McLaren', teamColor: '#FF8000', number: 4, nationality: 'British', status: 'active', stats: { championships: 1, wins: 11, podiums: 44, poles: 16 } },
+  VER: { id: 'VER', name: 'Max Verstappen', shortName: 'VER', team: 'Red Bull Racing', teamColor: '#3671C6', number: 1, nationality: 'Dutch', status: 'active', stats: { championships: 4, wins: 71, podiums: 127, poles: 48 } },
+  PIA: { id: 'PIA', name: 'Oscar Piastri', shortName: 'PIA', team: 'McLaren', teamColor: '#FF8000', number: 81, nationality: 'Australian', status: 'active', stats: { championships: 0, wins: 9, podiums: 26, poles: 6 } },
+  RUS: { id: 'RUS', name: 'George Russell', shortName: 'RUS', team: 'Mercedes', teamColor: '#27F4D2', number: 63, nationality: 'British', status: 'active', stats: { championships: 0, wins: 5, podiums: 24, poles: 7 } },
+  LEC: { id: 'LEC', name: 'Charles Leclerc', shortName: 'LEC', team: 'Ferrari', teamColor: '#E8002D', number: 16, nationality: 'Monégasque', status: 'active', stats: { championships: 0, wins: 8, podiums: 50, poles: 27 } },
+  HAM: { id: 'HAM', name: 'Lewis Hamilton', shortName: 'HAM', team: 'Ferrari', teamColor: '#E8002D', number: 44, nationality: 'British', status: 'active', stats: { championships: 7, wins: 105, podiums: 202, poles: 104 } },
+  ANT: { id: 'ANT', name: 'Kimi Antonelli', shortName: 'ANT', team: 'Mercedes', teamColor: '#27F4D2', number: 12, nationality: 'Italian', status: 'active', stats: { championships: 0, wins: 0, podiums: 3, poles: 0 } },
+  ALB: { id: 'ALB', name: 'Alexander Albon', shortName: 'ALB', team: 'Williams', teamColor: '#64C4FF', number: 23, nationality: 'Thai', status: 'active', stats: { championships: 0, wins: 0, podiums: 2, poles: 0 } },
+  SAI: { id: 'SAI', name: 'Carlos Sainz', shortName: 'SAI', team: 'Williams', teamColor: '#64C4FF', number: 55, nationality: 'Spanish', status: 'active', stats: { championships: 0, wins: 4, podiums: 29, poles: 6 } },
   ALO: { id: 'ALO', name: 'Fernando Alonso', shortName: 'ALO', team: 'Aston Martin', teamColor: '#229971', number: 14, nationality: 'Spanish', status: 'active', stats: { championships: 2, wins: 32, podiums: 106, poles: 22 } },
   STR: { id: 'STR', name: 'Lance Stroll', shortName: 'STR', team: 'Aston Martin', teamColor: '#229971', number: 18, nationality: 'Canadian', status: 'active', stats: { championships: 0, wins: 0, podiums: 3, poles: 1 } },
+  HUL: { id: 'HUL', name: 'Nico Hülkenberg', shortName: 'HUL', team: 'Kick Sauber', teamColor: '#52E252', number: 27, nationality: 'German', status: 'active', stats: { championships: 0, wins: 0, podiums: 1, poles: 1 } },
+  BOR: { id: 'BOR', name: 'Gabriel Bortoleto', shortName: 'BOR', team: 'Kick Sauber', teamColor: '#52E252', number: 5, nationality: 'Brazilian', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
+  TSU: { id: 'TSU', name: 'Yuki Tsunoda', shortName: 'TSU', team: 'Red Bull Racing', teamColor: '#3671C6', number: 22, nationality: 'Japanese', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
+  LAW: { id: 'LAW', name: 'Liam Lawson', shortName: 'LAW', team: 'Racing Bulls', teamColor: '#6692FF', number: 30, nationality: 'New Zealander', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
+  HAD: { id: 'HAD', name: 'Isack Hadjar', shortName: 'HAD', team: 'Racing Bulls', teamColor: '#6692FF', number: 6, nationality: 'French', status: 'active', stats: { championships: 0, wins: 0, podiums: 1, poles: 0 } },
+  OCO: { id: 'OCO', name: 'Esteban Ocon', shortName: 'OCO', team: 'Haas F1 Team', teamColor: '#B6BABD', number: 31, nationality: 'French', status: 'active', stats: { championships: 0, wins: 1, podiums: 4, poles: 0 } },
+  BEA: { id: 'BEA', name: 'Oliver Bearman', shortName: 'BEA', team: 'Haas F1 Team', teamColor: '#B6BABD', number: 87, nationality: 'British', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
   GAS: { id: 'GAS', name: 'Pierre Gasly', shortName: 'GAS', team: 'Alpine', teamColor: '#FF87BC', number: 10, nationality: 'French', status: 'active', stats: { championships: 0, wins: 1, podiums: 4, poles: 0 } },
-  OCO: { id: 'OCO', name: 'Esteban Ocon', shortName: 'OCO', team: 'Alpine', teamColor: '#FF87BC', number: 31, nationality: 'French', status: 'active', stats: { championships: 0, wins: 1, podiums: 3, poles: 0 } },
-  TSU: { id: 'TSU', name: 'Yuki Tsunoda', shortName: 'TSU', team: 'RB', teamColor: '#6692FF', number: 22, nationality: 'Japanese', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
-  RIC: { id: 'RIC', name: 'Daniel Ricciardo', shortName: 'RIC', team: 'RB', teamColor: '#6692FF', number: 3, nationality: 'Australian', status: 'active', stats: { championships: 0, wins: 8, podiums: 32, poles: 3 } },
-  HUL: { id: 'HUL', name: 'Nico Hulkenberg', shortName: 'HUL', team: 'Haas F1 Team', teamColor: '#B6BABD', number: 27, nationality: 'German', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 1 } },
-  MAG: { id: 'MAG', name: 'Kevin Magnussen', shortName: 'MAG', team: 'Haas F1 Team', teamColor: '#B6BABD', number: 20, nationality: 'Danish', status: 'active', stats: { championships: 0, wins: 0, podiums: 1, poles: 1 } },
-  BOT: { id: 'BOT', name: 'Valtteri Bottas', shortName: 'BOT', team: 'Kick Sauber', teamColor: '#52E252', number: 77, nationality: 'Finnish', status: 'active', stats: { championships: 0, wins: 10, podiums: 67, poles: 20 } },
-  ZHO: { id: 'ZHO', name: 'Zhou Guanyu', shortName: 'ZHO', team: 'Kick Sauber', teamColor: '#52E252', number: 24, nationality: 'Chinese', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
-  ALB: { id: 'ALB', name: 'Alexander Albon', shortName: 'ALB', team: 'Williams', teamColor: '#64C4FF', number: 23, nationality: 'Thai', status: 'active', stats: { championships: 0, wins: 0, podiums: 2, poles: 0 } },
-  SAR: { id: 'SAR', name: 'Logan Sargeant', shortName: 'SAR', team: 'Williams', teamColor: '#64C4FF', number: 2, nationality: 'American', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
+  COL: { id: 'COL', name: 'Franco Colapinto', shortName: 'COL', team: 'Alpine', teamColor: '#FF87BC', number: 43, nationality: 'Argentine', status: 'active', stats: { championships: 0, wins: 0, podiums: 0, poles: 0 } },
 };
 
 // ==========================================
@@ -239,55 +257,81 @@ export const races: Race[] = [
 
 export const constructors: Constructor[] = [
   {
-    id: 'red-bull',
-    name: 'Oracle Red Bull Racing',
-    shortName: 'Red Bull',
-    color: '#3671C6',
-    logo: '🏎️',
-    points: 860,
-    position: 1,
-    trend: 'stable',
-    drivers: ['VER', 'PER'],
-    winProbability: 72,
-    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
-  },
-  {
     id: 'mclaren',
-    name: 'McLaren F1 Team',
+    name: 'McLaren Formula 1 Team',
     shortName: 'McLaren',
-    color: '#FF8000',
+    color: '#F47600',
     logo: '🧡',
-    points: 798,
-    position: 2,
+    points: 833,
+    position: 1,
     trend: 'up',
     drivers: ['NOR', 'PIA'],
-    winProbability: 65,
-    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
-  },
-  {
-    id: 'ferrari',
-    name: 'Scuderia Ferrari',
-    shortName: 'Ferrari',
-    color: '#E8002D',
-    logo: '🐎',
-    points: 652,
-    position: 3,
-    trend: 'down',
-    drivers: ['LEC', 'SAI'],
-    winProbability: 45,
+    winProbability: 85,
     carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
   },
   {
     id: 'mercedes',
     name: 'Mercedes-AMG Petronas F1 Team',
     shortName: 'Mercedes',
-    color: '#27F4D2',
+    color: '#00D7B6',
     logo: '⭐',
-    points: 584,
-    position: 4,
+    points: 469,
+    position: 2,
     trend: 'up',
-    drivers: ['HAM', 'RUS'],
-    winProbability: 38,
+    drivers: ['RUS', 'ANT'],
+    winProbability: 40,
+    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
+  },
+  {
+    id: 'red-bull',
+    name: 'Oracle Red Bull Racing',
+    shortName: 'Red Bull',
+    color: '#4781D7',
+    logo: '🏎️',
+    points: 451,
+    position: 3,
+    trend: 'down',
+    drivers: ['VER', 'TSU'],
+    winProbability: 55,
+    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
+  },
+  {
+    id: 'ferrari',
+    name: 'Scuderia Ferrari HP',
+    shortName: 'Ferrari',
+    color: '#ED1131',
+    logo: '🐎',
+    points: 398,
+    position: 4,
+    trend: 'down',
+    drivers: ['LEC', 'HAM'],
+    winProbability: 42,
+    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
+  },
+  {
+    id: 'williams',
+    name: 'Atlassian Williams Racing',
+    shortName: 'Williams',
+    color: '#1868DB',
+    logo: '💙',
+    points: 137,
+    position: 5,
+    trend: 'up',
+    drivers: ['ALB', 'SAI'],
+    winProbability: 15,
+    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
+  },
+  {
+    id: 'rb',
+    name: 'Visa Cash App RB F1 Team',
+    shortName: 'RB',
+    color: '#6C98FF',
+    logo: '🔵',
+    points: 92,
+    position: 6,
+    trend: 'stable',
+    drivers: ['LAW', 'HAD'],
+    winProbability: 8,
     carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
   },
   {
@@ -296,78 +340,52 @@ export const constructors: Constructor[] = [
     shortName: 'Aston Martin',
     color: '#229971',
     logo: '💚',
-    points: 312,
-    position: 5,
-    trend: 'stable',
-    drivers: ['ALO', 'STR'],
-    winProbability: 18,
-    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
-  },
-  {
-    id: 'alpine',
-    name: 'BWT Alpine F1 Team',
-    shortName: 'Alpine',
-    color: '#FF87BC',
-    logo: '🩷',
-    points: 198,
-    position: 6,
-    trend: 'down',
-    drivers: ['GAS', 'OCO'],
-    winProbability: 12,
-    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
-  },
-  {
-    id: 'williams',
-    name: 'Williams Racing',
-    shortName: 'Williams',
-    color: '#64C4FF',
-    logo: '💙',
-    points: 142,
+    points: 89,
     position: 7,
-    trend: 'up',
-    drivers: ['ALB', 'SAR'],
-    winProbability: 8,
-    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
-  },
-  {
-    id: 'rb',
-    name: 'Visa Cash App RB F1 Team',
-    shortName: 'RB',
-    color: '#6692FF',
-    logo: '🔵',
-    points: 98,
-    position: 8,
-    trend: 'stable',
-    drivers: ['TSU', 'RIC'],
-    winProbability: 5,
+    trend: 'down',
+    drivers: ['ALO', 'STR'],
+    winProbability: 10,
     carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
   },
   {
     id: 'haas',
     name: 'MoneyGram Haas F1 Team',
     shortName: 'Haas',
-    color: '#B6BABD',
+    color: '#9C9FA2',
     logo: '⚪',
-    points: 54,
-    position: 9,
-    trend: 'down',
-    drivers: ['HUL', 'MAG'],
-    winProbability: 3,
+    points: 79,
+    position: 8,
+    trend: 'up',
+    drivers: ['OCO', 'BEA'],
+    winProbability: 5,
     carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
   },
   {
     id: 'sauber',
     name: 'Stake F1 Team Kick Sauber',
     shortName: 'Kick Sauber',
-    color: '#52E252',
+    color: '#01C00E',
     logo: '💚',
-    points: 28,
-    position: 10,
+    points: 70,
+    position: 9,
     trend: 'stable',
-    drivers: ['BOT', 'ZHO'],
+    drivers: ['HUL', 'BOR'],
     winProbability: 2,
     carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
   },
+  {
+    id: 'alpine',
+    name: 'BWT Alpine F1 Team',
+    shortName: 'Alpine',
+    color: '#00A1E8',
+    logo: '🩷',
+    points: 22,
+    position: 10,
+    trend: 'down',
+    drivers: ['GAS', 'COL'],
+    winProbability: 1,
+    carImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&q=80'
+  }
 ];
 
 // ==========================================

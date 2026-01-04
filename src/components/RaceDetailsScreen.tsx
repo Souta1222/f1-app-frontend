@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Flag, CheckCircle2, Trophy, Timer } from 'lucide-react';
+import { ArrowLeft, Flag, Trophy } from 'lucide-react';
 
 // 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
+
+// --- STATIC DATA: 2025 RESULTS (Generated from your CSV) ---
+const RESULTS_2025 = [
+  { "position": 1, "driver": "Lando Norris", "team": "McLaren", "wins": 11, "status": "Active" },
+  { "position": 2, "driver": "Max Verstappen", "team": "Red Bull", "wins": 71, "status": "Active" },
+  { "position": 3, "driver": "Oscar Piastri", "team": "McLaren", "wins": 9, "status": "Active" },
+  { "position": 4, "driver": "George Russell", "team": "Mercedes", "wins": 5, "status": "Active" },
+  { "position": 5, "driver": "Charles Leclerc", "team": "Ferrari", "wins": 8, "status": "Active" },
+  { "position": 6, "driver": "Lewis Hamilton", "team": "Ferrari", "wins": 105, "status": "Active" },
+  { "position": 7, "driver": "Kimi Antonelli", "team": "Mercedes", "wins": 0, "status": "Rookie" },
+  { "position": 8, "driver": "Alex Albon", "team": "Williams", "wins": 0, "status": "Active" },
+  { "position": 9, "driver": "Carlos Sainz", "team": "Williams", "wins": 4, "status": "Active" }
+];
 
 interface RaceResult {
   position: number;
   driver: string;
   team: string;
-  points: number;
+  points?: number; // Optional now
+  wins?: number;   // New field for 2025 summary
   status: string;
-  grid: number;
-  laps: number;
-  time?: string;
+  grid?: number;
+  laps?: number;
 }
 
 interface RaceDetailsScreenProps {
@@ -26,22 +39,24 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [raceInfo, setRaceInfo] = useState({ year: '', round: '' });
 
   useEffect(() => {
-    // 1. Parse ID (Format: "2023-round-1")
-    if (!raceId) return;
-    const parts = raceId.split('-');
-    if (parts.length >= 3) {
-        const year = parts[0];
-        const round = parts[2];
-        setRaceInfo({ year, round });
+    // 1. Handle 2025 Static Summary
+    if (raceId === '2025-summary') {
+        setRaceInfo({ year: '2025', round: 'Season Standings' });
+        setResults(RESULTS_2025);
+        return;
     }
 
-    // 2. Fetch Details
+    // 2. Parse ID for API
+    const parts = raceId.split('-');
+    if (parts.length >= 3) {
+        setRaceInfo({ year: parts[0], round: parts[2] });
+    }
+
+    // 3. Fetch Details from Backend
     const fetchResults = async () => {
       setLoading(true);
       try {
         const [year, , round] = raceId.split('-');
-        
-        // Try Fetching
         const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
         const res = await fetch(url, {
             method: "GET",
@@ -51,36 +66,22 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         });
         
-        let rawData = [];
         if (res.ok) {
-          rawData = await res.json();
-        } else {
-           // Fallback
-           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, {
-                method: "GET",
-                headers: {
-                    "ngrok-skip-browser-warning": "true",
-                    "Content-Type": "application/json"
-                }
-           });
-           if(resFallback.ok) rawData = await resFallback.json();
-        }
-
-        // 🛡️ DATA SANITIZER (The Fix for the Blank Screen)
-        // Maps "Team" -> "team", "Driver" -> "driver", etc.
-        const cleanData = rawData.map((item: any) => ({
+          const rawData = await res.json();
+          // Data Sanitizer
+          const cleanData = rawData.map((item: any) => ({
             position: parseInt(item.Position || item.position || '0'),
             driver: item.Driver || item.driver || 'Unknown Driver',
             team: item.Team || item.team || 'Unknown Team',
             points: parseFloat(item.Points || item.points || '0'),
             status: item.status || item.Status || 'Finished',
-            grid: parseInt(item.Grid || item.grid || '0'),
-            laps: parseInt(item.Laps || item.laps || '0'),
-            time: item.Time || item.time || ''
-        }));
-
-        setResults(cleanData);
-
+          }));
+          setResults(cleanData);
+        } else {
+           // Fallback attempt...
+           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
+           if(resFallback.ok) setResults(await resFallback.json());
+        }
       } catch (e) {
         console.error("Error fetching results", e);
       }
@@ -92,19 +93,15 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   // Helper for Team Colors
   const getTeamColor = (teamName: string) => {
-    if (!teamName) return '#94a3b8'; // Safety check
+    if (!teamName) return '#94a3b8';
     const t = teamName.toLowerCase();
     if (t.includes('red bull')) return '#3671C6';
     if (t.includes('ferrari')) return '#D92A32';
     if (t.includes('mercedes')) return '#00A19C';
     if (t.includes('mclaren')) return '#FF8000';
     if (t.includes('aston')) return '#006F62';
-    if (t.includes('alpine')) return '#0090FF';
     if (t.includes('williams')) return '#005AFF';
-    if (t.includes('haas')) return '#B6BABD';
-    if (t.includes('kick') || t.includes('sauber')) return '#52E252';
-    if (t.includes('rb') || t.includes('alpha')) return '#6692FF';
-    return '#94a3b8'; // Default Grey
+    return '#94a3b8';
   };
 
   return (
@@ -131,7 +128,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">Race Results</h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
-            {raceInfo.year} • Round {raceInfo.round}
+            {raceInfo.year} • {raceInfo.round}
           </span>
         </div>
       </div>
@@ -145,17 +142,13 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
           </div>
         ) : results.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Flag className="w-6 h-6 text-gray-400" />
-            </div>
             <p className="text-neutral-900 font-bold">No results found</p>
-            <p className="text-neutral-500 text-xs mt-1">Try selecting a different round.</p>
           </div>
         ) : (
           results.map((result, index) => (
             <div 
               key={index}
-              className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all active:scale-[0.99]"
+              className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all"
               style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
             >
               {/* Position Badge */}
@@ -173,20 +166,18 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
               </div>
 
-              {/* Stats */}
+              {/* Stats: Shows Wins for 2025, Points for others */}
               <div className="text-right">
-                <div className="font-mono font-bold text-sm text-green-600">+{result.points} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span></div>
+                {result.wins !== undefined ? (
+                    <div className="font-mono font-bold text-sm text-blue-600">{result.wins} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span></div>
+                ) : (
+                    <div className="font-mono font-bold text-sm text-green-600">+{result.points} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span></div>
+                )}
                 
                 <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
-                  {(result.status?.toLowerCase() === 'finished' || result.status?.includes('+')) ? (
                     <span className="text-slate-500 font-medium flex items-center gap-1">
-                          {result.status.includes('+') ? result.status : <><Flag className="w-3 h-3 text-slate-400" /> Finished</>}
-                    </span>
-                  ) : (
-                    <span className="text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded uppercase tracking-wider text-[9px]">
                         {result.status}
                     </span>
-                  )}
                 </div>
               </div>
             </div>
