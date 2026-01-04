@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Flag, Trophy } from 'lucide-react'; // ⚠️ Removed Calendar/MapPin to test if they are the crasher
+import { ArrowLeft, Flag, Trophy } from 'lucide-react'; 
+// ⚠️ NOTE: I removed Calendar/MapPin to stop the crash.
 
 // 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
 
 // --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
-  { "position": 1, "driver": "Lando Norris", "team": "McLaren", "wins": 11, "status": "Active" },
-  { "position": 2, "driver": "Max Verstappen", "team": "Red Bull", "wins": 71, "status": "Active" },
-  { "position": 3, "driver": "Oscar Piastri", "team": "McLaren", "wins": 9, "status": "Active" },
-  { "position": 4, "driver": "George Russell", "team": "Mercedes", "wins": 5, "status": "Active" },
-  { "position": 5, "driver": "Charles Leclerc", "team": "Ferrari", "wins": 8, "status": "Active" },
-  { "position": 6, "driver": "Lewis Hamilton", "team": "Ferrari", "wins": 105, "status": "Active" },
-  { "position": 7, "driver": "Kimi Antonelli", "team": "Mercedes", "wins": 0, "status": "Rookie" },
-  { "position": 8, "driver": "Alex Albon", "team": "Williams", "wins": 0, "status": "Active" },
-  { "position": 9, "driver": "Carlos Sainz", "team": "Williams", "wins": 4, "status": "Active" }
+  { "position": 1, "driver": "Lando Norris", "team": "McLaren", "wins": 11, "points": 0, "status": "Active" },
+  { "position": 2, "driver": "Max Verstappen", "team": "Red Bull", "wins": 71, "points": 0, "status": "Active" },
+  { "position": 3, "driver": "Oscar Piastri", "team": "McLaren", "wins": 9, "points": 0, "status": "Active" },
+  { "position": 4, "driver": "George Russell", "team": "Mercedes", "wins": 5, "points": 0, "status": "Active" },
+  { "position": 5, "driver": "Charles Leclerc", "team": "Ferrari", "wins": 8, "points": 0, "status": "Active" },
+  { "position": 6, "driver": "Lewis Hamilton", "team": "Ferrari", "wins": 105, "points": 0, "status": "Active" },
+  { "position": 7, "driver": "Kimi Antonelli", "team": "Mercedes", "wins": 0, "points": 0, "status": "Rookie" },
+  { "position": 8, "driver": "Alex Albon", "team": "Williams", "wins": 0, "points": 0, "status": "Active" },
+  { "position": 9, "driver": "Carlos Sainz", "team": "Williams", "wins": 4, "points": 0, "status": "Active" }
 ];
 
 interface RaceResult {
@@ -35,7 +36,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [viewMode, setViewMode] = useState<'results' | 'upcoming' | 'error'>('results');
+  const [viewMode, setViewMode] = useState<'results' | 'upcoming'>('results');
 
   useEffect(() => {
     // 1. Safe ID Parsing
@@ -61,7 +62,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         setRaceInfo({ year, round });
     }
 
-    // 4. Handle 2026 (Upcoming) IMMEDIATELY
+    // 4. Handle 2026 (Upcoming)
     if (year === '2026') {
         setViewMode('upcoming');
         setResults([]);
