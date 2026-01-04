@@ -6,7 +6,7 @@ import { FanPulseWidget } from './FanPulseWidget';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle';
-import logo from '../styles/LOGO.png'; 
+import logo from '../styles/logo.png'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
