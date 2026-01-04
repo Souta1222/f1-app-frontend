@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, MessageCircle, Send, X, User, ChevronDown, Users } from 'lucide-react';
+import { Star, Send, X, User, Users } from 'lucide-react';
 import { drivers, teams } from '../lib/data';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
@@ -7,7 +7,7 @@ import { useTheme } from './../components/ThemeContext.tsx';
 // 🟢 CONFIG: Use your functional backend URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// Consistent spacing constants - matching HomeScreen
+// Consistent spacing constants
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -20,15 +20,17 @@ const SPACING = {
   COMPONENT_GAP: 'gap-3',
 } as const;
 
-interface DriverRating {
-  driver_name: string;
+interface RatingData {
+  driver_name: string; // Backend always sends 'driver_name'
   avg_rating: number;
   total_votes: number;
   latest_comments: { user: string; rating: number; text: string; date: string }[];
 }
 
+// Frontend specific interfaces
+interface DriverRating extends RatingData {}
 interface TeamRating {
-  team_name: string;
+  team_name: string; // Mapped from driver_name for teams
   avg_rating: number;
   total_votes: number;
   latest_comments: { user: string; rating: number; text: string; date: string }[];
@@ -39,12 +41,13 @@ export function FanPulseWidget() {
   const isDark = theme === 'dark';
 
   const [ratings, setRatings] = useState<DriverRating[]>([]);
+  const [teamRatings, setTeamRatings] = useState<TeamRating[]>([]);
+  
   const [selectedDriver, setSelectedDriver] = useState<DriverRating | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TeamRating | null>(null);
+  
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [ratingType, setRatingType] = useState<'driver' | 'team'>('driver');
-
-  const [teamRatings, setTeamRatings] = useState<TeamRating[]>([]);
-  const [selectedTeam, setSelectedTeam] = useState<TeamRating | null>(null);
   
   const [userRating, setUserRating] = useState(10);
   const [userComment, setUserComment] = useState("");
@@ -53,56 +56,60 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  const fetchRatings = async () => {
+  // 🟢 UNIFIED FETCH: Gets all ratings and splits them
+  const fetchData = async () => {
     try {
       const res = await fetch(`${API_BASE}/community/ratings`);
       if (res.ok) {
-        const data = await res.json();
-        setRatings(data);
-      }
-    } catch (e) {
-      console.error("Failed to load fan ratings", e);
-    }
-  };
+        const allData: RatingData[] = await res.json();
+        
+        // 1. Filter Drivers
+        // Check if the rating name exists in your 'drivers' data file
+        const driverData = allData.filter(d => 
+            allDriversList.some(ad => ad.name === d.driver_name)
+        );
+        setRatings(driverData);
 
-  const fetchTeamRatings = async () => {
-    try {
-      // Use endpoint if available, otherwise mock for UI continuity
-      // (Your original code had a fetch here, kept for consistency)
-      const res = await fetch(`${API_BASE}/community/ratings`); // Reuse for now or update if you made a team endpoint
-      if (res.ok) {
-         // Logic to filter or mock team data if backend doesn't support it yet
-         const mockTeamRatings = allTeamsList.map(team => ({
-            team_name: team.name,
-            avg_rating: (Math.random() * 2 + 7).toFixed(1), // Mock high ratings
-            total_votes: Math.floor(Math.random() * 500),
-            latest_comments: []
-         }));
-         setTeamRatings(mockTeamRatings as any);
+        // 2. Filter Teams
+        // Check if the rating name exists in your 'teams' data file
+        const teamDataRaw = allData.filter(d => 
+            allTeamsList.some(t => t.name === d.driver_name)
+        );
+
+        // Map to Team Interface
+        const teamData: TeamRating[] = teamDataRaw.map(d => ({
+            team_name: d.driver_name, // Backend calls everything 'driver_name'
+            avg_rating: d.avg_rating,
+            total_votes: d.total_votes,
+            latest_comments: d.latest_comments
+        }));
+        setTeamRatings(teamData);
       }
     } catch (e) {
-      console.error("Failed to load team ratings", e);
+      console.error("Failed to load ratings", e);
     }
   };
 
   useEffect(() => {
-    fetchRatings();
-    fetchTeamRatings();
+    fetchData();
   }, []);
 
   const handleSubmit = async () => {
-    if (ratingType === 'driver' && !selectedDriver) return;
-    if (ratingType === 'team' && !selectedTeam) return;
+    // Validation
+    const entityName = ratingType === 'driver' 
+        ? selectedDriver?.driver_name 
+        : selectedTeam?.team_name;
+
+    if (!entityName) return;
     
     try {
-      const endpoint = ratingType === 'driver' ? '/community/rate' : '/community/rate'; // Update if you have a team endpoint
-      const name = ratingType === 'driver' ? selectedDriver?.driver_name : selectedTeam?.team_name;
-      
-      await fetch(`${API_BASE}${endpoint}`, {
+      // 🟢 FIX: Always use /community/rate and always use 'driver_name' key
+      // Your backend expects { driver_name: "..." } even for teams
+      await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          driver_name: name, // Reuse field name for simplicity with your current backend
+          driver_name: entityName, 
           rating: userRating,
           comment: userComment || "No comment",
           username: userName || "Anonymous Fan"
@@ -113,53 +120,34 @@ export function FanPulseWidget() {
       setUserComment("");
       setUserName("");
       
-      // Refresh Data
-      fetchRatings();
-      fetchTeamRatings();
+      // 🟢 REFRESH DATA IMMEDIATELY
+      await fetchData();
       
     } catch (e) {
       alert("Failed to submit rating");
     }
   };
 
+  // Helper to init selection if data doesn't exist yet
   const handleDriverChange = (driverName: string) => {
-    const existingStats = ratings.find(r => r.driver_name === driverName);
-    if (existingStats) {
-        setSelectedDriver(existingStats);
-    } else {
-        setSelectedDriver({
-            driver_name: driverName,
-            avg_rating: 0,
-            total_votes: 0,
-            latest_comments: []
-        });
-    }
+    const existing = ratings.find(r => r.driver_name === driverName);
+    if (existing) setSelectedDriver(existing);
+    else setSelectedDriver({ driver_name: driverName, avg_rating: 0, total_votes: 0, latest_comments: [] });
   };
 
   const handleTeamChange = (teamName: string) => {
-    const existingStats = teamRatings.find(r => r.team_name === teamName);
-    if (existingStats) {
-        setSelectedTeam(existingStats);
-    } else {
-        setSelectedTeam({
-            team_name: teamName,
-            avg_rating: 0,
-            total_votes: 0,
-            latest_comments: []
-        });
-    }
+    const existing = teamRatings.find(r => r.team_name === teamName);
+    if (existing) setSelectedTeam(existing);
+    else setSelectedTeam({ team_name: teamName, avg_rating: 0, total_votes: 0, latest_comments: [] });
   };
 
   return (
     <>
-      {/* Fixed backdrop overlay */}
       {isRatingOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm transition-all duration-300" />
       )}
       
-      {/* Main content wrapper */}
       <div className={`transition-all duration-300 ${isRatingOpen ? 'blur-sm' : ''}`}>
-        {/* Main Card */}
         <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200`}>
           <div className={SPACING.CARD_GAP}>
             <div 
@@ -170,7 +158,8 @@ export function FanPulseWidget() {
               `}
             >
               <div className={`${SPACING.CARD_PADDING}`}>
-                {/* Header Section */}
+                
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-black text-lg flex items-center gap-2 uppercase tracking-tight text-neutral-900 dark:text-white">
                     F1 Fan Pulse
@@ -221,7 +210,7 @@ export function FanPulseWidget() {
                             
                             <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <div className="text-xl font-black text-neutral-900 dark:text-white">{driver.avg_rating}</div>
+                                <div className="text-xl font-black text-neutral-900 dark:text-white">{driver.avg_rating.toFixed(1)}</div>
                                 <div className="text-[9px] text-gray-400 dark:text-gray-300 font-bold uppercase">Avg</div>
                               </div>
                               <div className={`w-1.5 h-8 rounded-full ${
@@ -236,7 +225,7 @@ export function FanPulseWidget() {
                     </div>
                   </div>
 
-                  {/* --- RATE BUTTONS --- */}
+                  {/* Rate Driver Button */}
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { 
@@ -292,7 +281,7 @@ export function FanPulseWidget() {
                             
                             <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <div className="text-xl font-black text-neutral-900 dark:text-white">{team.avg_rating}</div>
+                                <div className="text-xl font-black text-neutral-900 dark:text-white">{team.avg_rating.toFixed(1)}</div>
                                 <div className="text-[9px] text-gray-400 dark:text-gray-300 font-bold uppercase">Avg</div>
                               </div>
                               <div className={`w-1.5 h-8 rounded-full ${
@@ -307,7 +296,7 @@ export function FanPulseWidget() {
                     </div>
                   </div>
 
-                {/* --- RATE BUTTONS --- */}
+                {/* Rate Team Button */}
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { 
@@ -315,7 +304,7 @@ export function FanPulseWidget() {
                       setRatingType('team');
                       setIsRatingOpen(true);
                     }}
-                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white`}
+                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white`}
                   >
                     <Users className="w-3 h-3" />
                     Rate Team
