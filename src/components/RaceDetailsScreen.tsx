@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Flag, Trophy } from 'lucide-react';
+import { ArrowLeft, Flag, Trophy, Calendar, MapPin } from 'lucide-react';
 
 // 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
 
-// --- STATIC DATA: 2025 RESULTS (Generated from your CSV) ---
+// --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
   { "position": 1, "driver": "Lando Norris", "team": "McLaren", "wins": 11, "status": "Active" },
   { "position": 2, "driver": "Max Verstappen", "team": "Red Bull", "wins": 71, "status": "Active" },
@@ -21,8 +21,8 @@ interface RaceResult {
   position: number;
   driver: string;
   team: string;
-  points?: number; // Optional now
-  wins?: number;   // New field for 2025 summary
+  points?: number;
+  wins?: number;
   status: string;
   grid?: number;
   laps?: number;
@@ -37,6 +37,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '', round: '' });
+  const [isUpcoming, setIsUpcoming] = useState(false);
 
   useEffect(() => {
     // 1. Handle 2025 Static Summary
@@ -49,14 +50,24 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     // 2. Parse ID for API
     const parts = raceId.split('-');
     if (parts.length >= 3) {
-        setRaceInfo({ year: parts[0], round: parts[2] });
+        const year = parts[0];
+        const round = parts[2];
+        setRaceInfo({ year, round });
+
+        // 🟢 FIX: Detect 2026/Upcoming races and stop fetching
+        if (year === '2026') {
+            setIsUpcoming(true);
+            return;
+        }
     }
 
-    // 3. Fetch Details from Backend
+    // 3. Fetch Details from Backend (Only for past races)
     const fetchResults = async () => {
       setLoading(true);
       try {
         const [year, , round] = raceId.split('-');
+        
+        // Try Main API
         const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
         const res = await fetch(url, {
             method: "GET",
@@ -66,24 +77,34 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         });
         
+        let rawData = [];
         if (res.ok) {
-          const rawData = await res.json();
-          // Data Sanitizer
-          const cleanData = rawData.map((item: any) => ({
-            position: parseInt(item.Position || item.position || '0'),
-            driver: item.Driver || item.driver || 'Unknown Driver',
-            team: item.Team || item.team || 'Unknown Team',
-            points: parseFloat(item.Points || item.points || '0'),
-            status: item.status || item.Status || 'Finished',
-          }));
-          setResults(cleanData);
+          rawData = await res.json();
         } else {
-           // Fallback attempt...
+           // Fallback API
            const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
-           if(resFallback.ok) setResults(await resFallback.json());
+           if(resFallback.ok) {
+               rawData = await resFallback.json();
+           }
         }
+
+        // 🟢 FIX: Crash Protection (Ensure rawData is actually an Array)
+        if (Array.isArray(rawData) && rawData.length > 0) {
+            const cleanData = rawData.map((item: any) => ({
+                position: parseInt(item.Position || item.position || '0'),
+                driver: item.Driver || item.driver || 'Unknown Driver',
+                team: item.Team || item.team || 'Unknown Team',
+                points: parseFloat(item.Points || item.points || '0'),
+                status: item.status || item.Status || 'Finished',
+            }));
+            setResults(cleanData);
+        } else {
+            setResults([]); // No results found, but don't crash
+        }
+
       } catch (e) {
         console.error("Error fetching results", e);
+        setResults([]);
       }
       setLoading(false);
     };
@@ -126,7 +147,9 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">Race Results</h1>
+          <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
+            {isUpcoming ? 'Race Preview' : 'Race Results'}
+          </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
             {raceInfo.year} • {raceInfo.round}
           </span>
@@ -135,7 +158,20 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {loading ? (
+        {/* 🟢 HANDLING UPCOMING RACES (2026) */}
+        {isUpcoming ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
+                <Calendar className="w-16 h-16 text-blue-500 mb-4" />
+                <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
+                <p className="text-sm text-neutral-500 mb-6">
+                    This race hasn't started yet. AI predictions will be available 3 days before the race.
+                </p>
+                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
+                    <MapPin className="w-4 h-4" />
+                    See Circuit Map
+                </div>
+            </div>
+        ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20">
              <div className="animate-spin text-4xl mb-4 text-red-700">🏎️</div>
              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Fetching Data...</p>
@@ -143,6 +179,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         ) : results.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
             <p className="text-neutral-900 font-bold">No results found</p>
+            <p className="text-neutral-500 text-xs mt-1">This race might not have happened yet.</p>
           </div>
         ) : (
           results.map((result, index) => (
