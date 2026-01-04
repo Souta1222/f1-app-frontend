@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react'; // ⚠️ ONLY importing ArrowLeft. Others are removed.
+// 🟢 SAFETY: Using ChevronLeft (usually exists if ChevronRight exists) instead of ArrowLeft
+import { ChevronLeft } from 'lucide-react'; 
 
 // 🟢 YOUR BACKEND URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
@@ -65,14 +66,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     // 4. Handle 2026 (Upcoming)
     if (year === '2026') {
         setIsUpcoming(true);
-        setResults([]);
+        setResults([]); 
         setLoading(false);
-        return; // 🛑 Stop execution here.
+        return; 
     }
+    
+    setIsUpcoming(false);
 
     // 5. Fetch Data (Only for 2023/2024)
-    setIsUpcoming(false);
-    
     const fetchResults = async () => {
       setLoading(true);
       try {
@@ -95,7 +96,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // 🛡️ CRASH PROTECTION: Manual Loop
+        // 🛡️ DATA SANITIZATION LOOP
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -157,7 +158,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             onClick={onBack} 
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md"
         >
-          <ArrowLeft className="w-5 h-5" />
+          {/* 🟢 CHANGED: Using ChevronLeft because ArrowLeft might be missing */}
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
@@ -172,7 +174,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       {/* Content */}
       <div className="p-4 space-y-3">
         {isUpcoming ? (
-            // 🟢 2026 View (SIMPLIFIED - No complex icons that crash)
+            // 🟢 2026 View (Using Emojis to be 100% safe)
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
