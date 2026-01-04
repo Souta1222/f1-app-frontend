@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-// 🟢 SAFETY: Using ChevronLeft (usually exists if ChevronRight exists) instead of ArrowLeft
-import { ChevronLeft } from 'lucide-react'; 
 
-// 🟢 YOUR BACKEND URL
-const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
+// 🟢 SAFE MODE: Defining API here to prevent import errors
+const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 // --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
-  { "position": 1, "driver": "Lando Norris", "team": "McLaren", "wins": 11, "points": 0, "status": "Active" },
-  { "position": 2, "driver": "Max Verstappen", "team": "Red Bull", "wins": 71, "points": 0, "status": "Active" },
-  { "position": 3, "driver": "Oscar Piastri", "team": "McLaren", "wins": 9, "points": 0, "status": "Active" },
-  { "position": 4, "driver": "George Russell", "team": "Mercedes", "wins": 5, "points": 0, "status": "Active" },
-  { "position": 5, "driver": "Charles Leclerc", "team": "Ferrari", "wins": 8, "points": 0, "status": "Active" },
-  { "position": 6, "driver": "Lewis Hamilton", "team": "Ferrari", "wins": 105, "points": 0, "status": "Active" },
-  { "position": 7, "driver": "Kimi Antonelli", "team": "Mercedes", "wins": 0, "points": 0, "status": "Rookie" },
-  { "position": 8, "driver": "Alex Albon", "team": "Williams", "wins": 0, "points": 0, "status": "Active" },
-  { "position": 9, "driver": "Carlos Sainz", "team": "Williams", "wins": 4, "points": 0, "status": "Active" }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, status: "Active" },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, status: "Active" },
+  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 9, status: "Active" },
+  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 5, status: "Active" },
+  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, status: "Active" },
+  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, status: "Active" },
+  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, status: "Rookie" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, status: "Active" },
+  { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, "status": "Active" }
 ];
 
 interface RaceResult {
@@ -36,23 +34,22 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [isUpcoming, setIsUpcoming] = useState(false);
+  const [viewMode, setViewMode] = useState<'results' | 'upcoming'>('results');
 
   useEffect(() => {
-    // 1. Safe ID Parsing
+    // 1. Safety Check: Ensure ID exists
     const safeId = String(raceId || '');
     if (!safeId) return;
 
-    // 2. Check for 2025 Summary
+    // 2. Handle 2025 Summary
     if (safeId === '2025-summary') {
         setRaceInfo({ year: '2025', round: 'Season Standings' });
         setResults(RESULTS_2025);
-        setLoading(false);
-        setIsUpcoming(false);
+        setViewMode('results');
         return;
     }
 
-    // 3. Parse ID
+    // 3. Parse Year & Round
     const parts = safeId.split('-');
     let year = '2024';
     let round = '1';
@@ -65,15 +62,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
     // 4. Handle 2026 (Upcoming)
     if (year === '2026') {
-        setIsUpcoming(true);
-        setResults([]); 
-        setLoading(false);
+        setViewMode('upcoming');
+        setResults([]);
         return; 
     }
     
-    setIsUpcoming(false);
-
     // 5. Fetch Data (Only for 2023/2024)
+    setViewMode('results');
+    
     const fetchResults = async () => {
       setLoading(true);
       try {
@@ -89,14 +85,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         if (res.ok) {
            rawData = await res.json();
         } else {
-           // Fallback
+           // Fallback fetch
            try {
              const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
              if (resFallback.ok) rawData = await resFallback.json();
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // 🛡️ DATA SANITIZATION LOOP
+        // 🛡️ Safe Data Processing
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -158,12 +154,12 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             onClick={onBack} 
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md"
         >
-          {/* 🟢 CHANGED: Using ChevronLeft because ArrowLeft might be missing */}
-          <ChevronLeft className="w-5 h-5" />
+          {/* 🟢 CHANGED: Using Emoji instead of Icon to prevent crash */}
+          <span className="text-xl">⬅️</span>
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {isUpcoming ? 'Race Preview' : 'Race Results'}
+            {viewMode === 'upcoming' ? 'Race Preview' : 'Race Results'}
           </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
             {raceInfo.year} • {raceInfo.round}
@@ -173,8 +169,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {isUpcoming ? (
-            // 🟢 2026 View (Using Emojis to be 100% safe)
+        {viewMode === 'upcoming' ? (
+            // 🟢 2026 View (Pure HTML/CSS - No External Components)
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
@@ -194,7 +190,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         ) : (!results || results.length === 0) ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <div className="text-2xl">🏁</div>
+                <span className="text-2xl">🏁</span>
             </div>
             <p className="text-neutral-900 font-bold">No results found</p>
           </div>
