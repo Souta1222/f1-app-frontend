@@ -44,20 +44,34 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 ROBUST FETCH: Shows all data
+  // 🟢 FIXED FETCH: Removes strict filtering so data ALWAYS shows
   const fetchData = async () => {
     try {
       // Add timestamp to prevent caching
       const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`);
       if (res.ok) {
         const allData: RatingData[] = await res.json();
+        console.log("🔥 Widget Received:", allData); // Check your browser console
+
+        // Simple Classification: 
+        // If the name exists in our 'teams' list -> Team Rating
+        // Everything else -> Driver Rating
+        const knownTeamNames = allTeamsList.map(t => t.name.toLowerCase());
         
-        // Known names
-        const knownTeamNames = allTeamsList.map(t => t.name);
-        
-        // Split Data
-        const teamsData = allData.filter(d => knownTeamNames.includes(d.driver_name));
-        const driversData = allData.filter(d => !knownTeamNames.includes(d.driver_name));
+        const teamsData: RatingData[] = [];
+        const driversData: RatingData[] = [];
+
+        allData.forEach(d => {
+            if (knownTeamNames.includes(d.driver_name.toLowerCase())) {
+                teamsData.push(d);
+            } else {
+                driversData.push(d);
+            }
+        });
+
+        // Sort by votes (most popular first)
+        driversData.sort((a, b) => b.total_votes - a.total_votes);
+        teamsData.sort((a, b) => b.total_votes - a.total_votes);
 
         setRatings(driversData);
         setTeamRatings(teamsData);
