@@ -36,7 +36,7 @@ interface RaceResult {
   points?: number;
   wins?: number;
   status: string;
-  details?: string; // Added details field
+  details?: string;
 }
 
 interface RaceDetailsScreenProps {
@@ -48,14 +48,32 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // 1. Analyze ID
+  // 1. SMART ID PARSING (Fixes the "Australian GP" bug)
   const safeId = String(raceId || '');
-  const parts = safeId.split('-');
-  const year = parts[0] || '2024';
-  const round = parts[2] || '1';
+  
+  let year = '2024'; // Default
+  let round = '1';   // Default
+
+  // 🔍 Find the year anywhere in the string (e.g. "australian-gp-2026" -> 2026)
+  const yearMatch = safeId.match(/\b(202\d)\b/); 
+  if (yearMatch) {
+      year = yearMatch[1];
+  } else {
+      // Fallback: If no year found, try the first part of ID if it looks like a year
+      const parts = safeId.split('-');
+      if (parts[0] && parts[0].length === 4 && !isNaN(Number(parts[0]))) {
+          year = parts[0];
+      }
+  }
+
+  // 🔍 Find round number if present
+  const roundMatch = safeId.match(/round-(\d+)/i);
+  if (roundMatch) {
+      round = roundMatch[1];
+  }
 
   // 2. Logic Modes
-  const is2025 = safeId === '2025-summary';
+  const is2025 = safeId.includes('2025-summary') || year === '2025';
   const is2026 = year === '2026';
   const shouldFetch = !is2025 && !is2026;
 
@@ -119,7 +137,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   }, [is2025, is2026, fetchedResults]);
 
   const headerTitle = is2025 ? "2025 Standings" : (is2026 ? "2026 Preview" : `Round ${round}`);
-  const subTitle = is2025 ? "Season Summary" : (is2026 ? "Future Season" : `${year} Official Results`);
+  const subTitle = is2025 ? "Season Summary" : (is2026 ? `Future Season (${year})` : `${year} Official Results`);
 
   // 6. Dynamic Styles
   const containerStyle = isDark 
@@ -238,7 +256,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     </div>
                 </div>
 
-                {/* 🟢 NEW: AI DETAILS SECTION (Visible only for 2025) */}
+                {/* AI DETAILS SECTION */}
                 {result.details && (
                     <div className={`mt-1 pl-12 pr-2 py-2 rounded-lg text-xs leading-relaxed flex gap-2 items-start ${isDark ? 'bg-neutral-800/50 text-neutral-400' : 'bg-slate-50 text-slate-600'}`}>
                         <Info className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />
