@@ -44,18 +44,15 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 FIXED FETCH: Removes strict filtering so data ALWAYS shows
+  // 🟢 UNIFIED REAL DATA FETCH
   const fetchData = async () => {
     try {
       // Add timestamp to prevent caching
       const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`);
       if (res.ok) {
         const allData: RatingData[] = await res.json();
-        console.log("🔥 Widget Received:", allData); // Check your browser console
-
-        // Simple Classification: 
-        // If the name exists in our 'teams' list -> Team Rating
-        // Everything else -> Driver Rating
+        
+        // Normalize names for comparison
         const knownTeamNames = allTeamsList.map(t => t.name.toLowerCase());
         
         const teamsData: RatingData[] = [];
@@ -69,7 +66,7 @@ export function FanPulseWidget() {
             }
         });
 
-        // Sort by votes (most popular first)
+        // Sort by popularity (votes)
         driversData.sort((a, b) => b.total_votes - a.total_votes);
         teamsData.sort((a, b) => b.total_votes - a.total_votes);
 
@@ -259,7 +256,7 @@ export function FanPulseWidget() {
                     </div>
                   </div>
 
-                {/* 🟢 Rate Team Button (Fixed Visibility: RED) */}
+                {/* 🟢 Rate Team Button (NOW RED) */}
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { 
