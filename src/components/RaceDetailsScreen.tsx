@@ -1,21 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Calendar, MapPin, Flag, Trophy, Clock } from 'lucide-react';
+import { ChevronLeft, Calendar, Flag, Trophy, Clock } from 'lucide-react';
 import { useTheme } from './ThemeContext'; 
 
 // 🟢 INTERNAL CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- FIXED STATIC DATA: 2025 SEASON (Logical Wins & Points) ---
+// --- FIXED STATIC DATA: 2025 SEASON (Derived from your CSV) ---
 const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 7, points: 410, status: "Champion" },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 6, points: 395, status: "Active" },
-  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 4, points: 280, status: "Active" },
-  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 240, status: "Active" },
-  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 2, points: 210, status: "Active" },
-  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 1, points: 190, status: "Active" },
-  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 1, points: 140, status: "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 95, status: "Active" },
-  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 85, status: "Active" }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion" },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active" },
+  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 7, points: 300, status: "Active" },
+  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 250, status: "Active" },
+  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 0, points: 200, status: "Active" },
+  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 0, points: 180, status: "Active" },
+  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 150, status: "Rookie" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 100, status: "Active" },
+  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 80, status: "Active" },
+  { position: 10, driver: "Fernando Alonso", "team": "Aston Martin", wins: 0, points: 50, status: "Active" },
+  { position: 11, driver: "Nico Hülkenberg", "team": "Kick Sauber", wins: 0, points: 45, status: "Active" },
+  { position: 12, driver: "Yuki Tsunoda", "team": "Red Bull", wins: 0, points: 40, status: "Active" },
+  { position: 13, driver: "Isack Hadjar", "team": "Racing Bulls", wins: 0, points: 35, status: "Rookie" },
+  { position: 14, driver: "Oliver Bearman", "team": "Haas", wins: 0, points: 30, status: "Active" },
+  { position: 15, driver: "Liam Lawson", "team": "Racing Bulls", wins: 0, points: 25, status: "Active" },
+  { position: 16, driver: "Esteban Ocon", "team": "Haas", wins: 0, points: 20, status: "Active" },
+  { position: 17, driver: "Lance Stroll", "team": "Aston Martin", wins: 0, points: 15, status: "Active" },
+  { position: 18, driver: "Pierre Gasly", "team": "Alpine", wins: 0, points: 10, status: "Active" },
+  { position: 19, driver: "Gabriel Bortoleto", "team": "Kick Sauber", wins: 0, points: 5, status: "Rookie" },
+  { position: 20, driver: "Franco Colapinto", "team": "Alpine", wins: 0, points: 0, status: "Active" }
 ];
 
 interface RaceResult {
@@ -128,6 +139,10 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     if (t.includes('mclaren')) return '#FF8000';
     if (t.includes('aston')) return '#006F62';
     if (t.includes('williams')) return '#005AFF';
+    if (t.includes('alpine')) return '#0090FF';
+    if (t.includes('haas')) return '#B6BABD';
+    if (t.includes('sauber') || t.includes('kick')) return '#52E252';
+    if (t.includes('racing bulls') || t.includes('rb')) return '#6692FF';
     return '#94a3b8';
   };
 
@@ -145,7 +160,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             onClick={onBack} 
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md border border-white/10"
         >
-          {/* 🟢 FIXED: Using Lucide Icon instead of Emoji */}
           <ChevronLeft className="w-6 h-6 text-white" />
         </button>
         <div>
@@ -159,7 +173,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       {/* CONTENT */}
       <div className="p-4 space-y-3">
         
-        {/* --- 2026 VIEW (FIXED: Useful Info Only) --- */}
+        {/* --- 2026 VIEW --- */}
         {is2026 && (
             <div className={`flex flex-col items-center justify-center py-16 rounded-2xl border shadow-sm text-center px-6 transition-all ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white'}`}>
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-blue-50 text-blue-500'}`}>
@@ -169,8 +183,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <p className={`text-sm mb-6 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                     The 2026 grid is set. AI predictions will unlock after winter testing.
                 </p>
-                
-                {/* 🟢 FIXED: "Circuit Map" replaced with valid "Countdown" style badge */}
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest border ${isDark ? 'border-neutral-700 bg-neutral-800 text-neutral-300' : 'border-blue-100 bg-blue-50 text-blue-700'}`}>
                     <Clock className="w-3 h-3" />
                     <span>Pre-Season Mode</span>
@@ -211,8 +223,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
                 {/* Stats */}
                 <div className="text-right">
-                    {result.wins !== undefined ? (
-                        // 🟢 LOGIC FIX: Shows Season Wins (7, 6, etc) instead of Career Wins
+                    {result.wins !== undefined && result.wins > 0 ? (
                         <div className="font-mono font-bold text-sm text-blue-500">
                             {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
                         </div>
@@ -222,7 +233,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         </div>
                     )}
                     
-                    {result.status && result.status !== 'Finished' && (
+                    {result.status && result.status !== 'Finished' && result.status !== 'Active' && (
                         <div className="mt-1">
                              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded">{result.status}</span>
                         </div>
