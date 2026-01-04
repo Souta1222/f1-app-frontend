@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Flag, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
+import { useTheme } from './ThemeContext'; // Ensure this path matches your file structure
 
-// 🟢 1. INTERNAL CONFIG (No Import Errors)
+// 🟢 INTERNAL CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 2. STATIC DATA
+// --- STATIC DATA 2025 ---
 const RESULTS_2025 = [
   { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, points: 0, status: "Active" },
   { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, points: 0, "status": "Active" },
@@ -12,7 +14,7 @@ const RESULTS_2025 = [
   { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, points: 0, "status": "Active" },
   { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, points: 0, "status": "Active" },
   { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 0, "status": "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", "wins": 0, points: 0, "status": "Active" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 0, "status": "Active" },
   { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, points: 0, "status": "Active" }
 ];
 
@@ -31,38 +33,25 @@ interface RaceDetailsScreenProps {
 }
 
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
-  // 🟢 3. IMMEDIATE LOGIC (No useEffect required for these)
-  const safeId = String(raceId || '');
-  
-  // 🟢 FIXED: Determine the "Mode" instantly based on the ID
-  const is2025Summary = safeId === '2025-summary';
-  const is2026Upcoming = safeId.startsWith('2026-');
-  
-  // 🟢 FIXED: Better ID parsing that works for all formats
-  let year = '2024';
-  let round = '1';
-  
-  // Extract year (look for first 4-digit number)
-  const yearMatch = safeId.match(/\b(\d{4})\b/);
-  if (yearMatch) {
-    year = yearMatch[1];
-  }
-  
-  // Extract round (look for last number in the string)
-  const roundMatch = safeId.match(/(\d+)(?!.*\d)/);
-  if (roundMatch) {
-    round = roundMatch[1];
-  }
-  
-  const shouldFetch = !is2025Summary && !is2026Upcoming;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
-  // State for Fetching Only
+  // 1. Logic Modes
+  const safeId = String(raceId || '');
+  const parts = safeId.split('-');
+  const year = parts[0] || '2024';
+  const round = parts[2] || '1';
+
+  const is2025 = safeId === '2025-summary';
+  const is2026 = year === '2026';
+  const shouldFetch = !is2025 && !is2026;
+
+  // 2. Data State
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 🟢 4. SAFE FETCH EFFECT
+  // 3. Fetch Effect
   useEffect(() => {
-    // If we don't need to fetch, STOP immediately.
     if (!shouldFetch) return;
 
     const fetchResults = async () => {
@@ -80,14 +69,12 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         if (res.ok) {
            rawData = await res.json();
         } else {
-           // Fallback
            try {
              const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
              if (resFallback.ok) rawData = await resFallback.json();
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // Parse Data safely
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -103,32 +90,39 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 }
             }
             setFetchedResults(cleanData);
-        } else {
-            setFetchedResults([]);
         }
-
-      } catch (e) {
-        console.error("Fetch Error:", e);
-        setFetchedResults([]);
-      }
+      } catch (e) { console.error(e); }
       setLoading(false);
     };
 
     fetchResults();
   }, [safeId, year, round, shouldFetch, raceId]);
 
-  // 🟢 5. DECIDE WHAT TO SHOW
-  // We pick the correct list based on the "Mode" we calculated at the top
-  let activeResults: RaceResult[] = [];
-  if (is2025Summary) {
-      activeResults = RESULTS_2025;
-  } else if (shouldFetch) {
-      activeResults = fetchedResults;
+  // 4. Prepare Display Data
+  let displayList: RaceResult[] = [];
+  let headerTitle = "Race Results";
+  
+  if (is2025) {
+      displayList = RESULTS_2025;
+      headerTitle = "2025 Standings";
+  } else if (is2026) {
+      displayList = []; 
+      headerTitle = "2026 Preview";
+  } else {
+      displayList = fetchedResults;
+      headerTitle = `${year} Round ${round}`;
   }
-  // For 2026, activeResults is empty (handled by UI check)
 
+  // 5. Styles
+  const containerStyle = isDark 
+    ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
+    : { 
+        backgroundColor: '#E2E8F0', 
+        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+        color: '#1e293b' 
+      };
 
-  // Helper for Colors
   const getTeamColor = (teamName: string) => {
     if (!teamName) return '#94a3b8';
     const t = String(teamName).toLowerCase();
@@ -143,115 +137,111 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] overflow-y-auto pb-24 font-sans w-full h-full"
-      style={{ 
-        backgroundColor: '#E2E8F0', 
-        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
-        backgroundSize: '24px 24px',
-        color: '#1e293b' 
-      }}
+      className="fixed inset-0 z-[1000] overflow-y-auto pb-24 font-sans w-full h-full transition-colors duration-300"
+      style={containerStyle}
     >
-      {/* Header */}
+      {/* HEADER */}
       <div 
         className="sticky top-0 z-20 shadow-lg flex items-center gap-4 px-4 py-4"
-        style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
+        style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)', color: 'white' }}
       >
         <button 
             onClick={onBack} 
-            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md"
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md text-white border border-white/10"
         >
-          {/* EMOJI BUTTON (Crash Proof) */}
-          <span className="text-xl">⬅️</span>
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {is2026Upcoming ? 'Race Preview' : 'Race Results'}
-          </h1>
-          <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
-            {is2025Summary ? '2025 Season' : `${year} • Round ${round}`}
+          <h1 className="font-black text-xl leading-none uppercase tracking-tight">{headerTitle}</h1>
+          <span className="text-xs opacity-80 font-bold uppercase tracking-widest mt-1 inline-block text-red-100">
+            {is2025 ? 'Season Summary' : (is2026 ? 'Future Season' : 'Official Results')}
           </span>
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* CONTENT */}
       <div className="p-4 space-y-3">
         
-        {/* VIEW 1: 2026 UPCOMING */}
-        {is2026Upcoming && (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
-                <div className="text-4xl mb-4">📅</div>
-                <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
-                <p className="text-sm text-neutral-500 mb-6">
-                    This race hasn't started yet. AI predictions will be available 3 days before the race.
+        {/* --- 2026 VIEW --- */}
+        {is2026 && (
+            <div className={`flex flex-col items-center justify-center py-16 rounded-2xl border shadow-sm text-center px-6 transition-all ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white'}`}>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-blue-50 text-blue-500'}`}>
+                    <Calendar className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-black mb-2">Upcoming Event</h2>
+                <p className={`text-sm mb-6 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                    This race hasn't started yet. <br/> AI predictions will be available 3 days before the race.
                 </p>
-                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
-                    <span>📍</span>
-                    See Circuit Map
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest border ${isDark ? 'border-neutral-700 bg-neutral-800 text-neutral-300' : 'border-blue-100 bg-blue-50 text-blue-700'}`}>
+                    <Clock className="w-3 h-3" />
+                    <span>Coming Soon</span>
                 </div>
             </div>
         )}
 
-        {/* VIEW 2: LOADING */}
-        {shouldFetch && loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-             <div className="animate-spin text-4xl mb-4 text-red-700">🏎️</div>
-             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Fetching Data...</p>
-          </div>
+        {/* --- LOADING --- */}
+        {loading && (
+            <div className="flex flex-col items-center justify-center py-20">
+                <div className="animate-spin text-4xl mb-4 text-red-600">🏎️</div>
+                <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Fetching Data...</p>
+            </div>
         )}
 
-        {/* VIEW 3: RESULTS LIST (2025 or Fetch) */}
-        {!is2026Upcoming && !loading && (
-            <>
-                {(!activeResults || activeResults.length === 0) ? (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="text-3xl mb-2">🏁</div>
-                        <p className="text-neutral-900 font-bold">No results found</p>
-                    </div>
-                ) : (
-                    activeResults.map((result, index) => (
-                        <div 
-                        key={index}
-                        className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all"
-                        style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
-                        >
-                            {/* Position */}
-                            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-sm shadow-inner
-                                ${result.position === 1 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
-                                result.position === 2 ? 'bg-slate-100 text-slate-600 border border-slate-200' :
-                                result.position === 3 ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-slate-50 text-slate-400'}
-                            `}>
-                                {result.position === 1 ? '🏆' : result.position}
-                            </div>
+        {/* --- RESULTS LIST --- */}
+        {displayList.map((result, index) => (
+            <div 
+                key={index}
+                className={`p-3 mb-2 rounded-xl shadow-sm flex items-center gap-4 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
+                style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
+            >
+                {/* Position */}
+                <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
+                    result.position === 1 ? 'bg-yellow-100 text-yellow-700' : 
+                    result.position === 2 ? 'bg-slate-200 text-slate-700' : 
+                    result.position === 3 ? 'bg-orange-100 text-orange-800' : 
+                    (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
+                }`}>
+                    {result.position === 1 ? <Trophy className="w-4 h-4" /> : result.position}
+                </div>
 
-                            {/* Driver */}
-                            <div className="flex-1 min-w-0">
-                                <div className="font-bold text-neutral-900 truncate text-sm">{result.driver}</div>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
-                            </div>
+                {/* Driver */}
+                <div className="flex-1 min-w-0">
+                    <div className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.driver}</div>
+                    <div className={`text-[10px] font-bold uppercase tracking-wide truncate ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>{result.team}</div>
+                </div>
 
-                            {/* Stats */}
-                            <div className="text-right">
-                                {result.wins !== undefined ? (
-                                    <div className="font-mono font-bold text-sm text-blue-600">
-                                        {result.wins || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span>
-                                    </div>
-                                ) : (
-                                    <div className="font-mono font-bold text-sm text-green-600">
-                                        +{result.points || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span>
-                                    </div>
-                                )}
-                                
-                                <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1">
-                                        {String(result.status)}
-                                    </span>
-                                </div>
-                            </div>
+                {/* Stats */}
+                <div className="text-right">
+                    {result.wins !== undefined ? (
+                        <div className="font-mono font-bold text-sm text-blue-500">
+                            {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
                         </div>
-                    ))
-                )}
-            </>
+                    ) : (
+                        <div className="font-mono font-bold text-sm text-green-500">
+                            +{result.points} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>PTS</span>
+                        </div>
+                    )}
+                    
+                    {result.status && result.status !== 'Finished' && (
+                        <div className="mt-1">
+                             <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded">{result.status}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        ))}
+
+        {/* --- EMPTY STATE --- */}
+        {!is2026 && !loading && displayList.length === 0 && (
+            <div className={`text-center py-12 rounded-2xl border border-dashed ${isDark ? 'border-neutral-800 bg-neutral-900/50' : 'border-slate-200 bg-white'}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                    <Flag className={`w-6 h-6 ${isDark ? 'text-neutral-600' : 'text-slate-400'}`} />
+                </div>
+                <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No results found</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Data not available for this session.</p>
+            </div>
         )}
+
       </div>
     </div>
   );
