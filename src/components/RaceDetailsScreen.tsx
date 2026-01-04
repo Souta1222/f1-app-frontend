@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Flag, Trophy } from 'lucide-react'; 
-// ⚠️ NOTE: I removed Calendar/MapPin to stop the crash.
+import { ArrowLeft } from 'lucide-react'; // ⚠️ ONLY importing ArrowLeft. Others are removed.
 
 // 🟢 YOUR BACKEND URL
-const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
+const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
 
 // --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
@@ -36,7 +35,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [results, setResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [viewMode, setViewMode] = useState<'results' | 'upcoming'>('results');
+  const [isUpcoming, setIsUpcoming] = useState(false);
 
   useEffect(() => {
     // 1. Safe ID Parsing
@@ -47,7 +46,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     if (safeId === '2025-summary') {
         setRaceInfo({ year: '2025', round: 'Season Standings' });
         setResults(RESULTS_2025);
-        setViewMode('results');
+        setLoading(false);
+        setIsUpcoming(false);
         return;
     }
 
@@ -64,13 +64,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
     // 4. Handle 2026 (Upcoming)
     if (year === '2026') {
-        setViewMode('upcoming');
+        setIsUpcoming(true);
         setResults([]);
+        setLoading(false);
         return; // 🛑 Stop execution here.
     }
 
     // 5. Fetch Data (Only for 2023/2024)
-    setViewMode('results'); // Default to results view
+    setIsUpcoming(false);
     
     const fetchResults = async () => {
       setLoading(true);
@@ -160,7 +161,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {viewMode === 'upcoming' ? 'Race Preview' : 'Race Results'}
+            {isUpcoming ? 'Race Preview' : 'Race Results'}
           </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
             {raceInfo.year} • {raceInfo.round}
@@ -170,8 +171,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {viewMode === 'upcoming' ? (
-            // 🟢 2026 View (SIMPLIFIED - No complex icons)
+        {isUpcoming ? (
+            // 🟢 2026 View (SIMPLIFIED - No complex icons that crash)
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
@@ -191,7 +192,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         ) : (!results || results.length === 0) ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Flag className="w-6 h-6 text-gray-400" />
+                <div className="text-2xl">🏁</div>
             </div>
             <p className="text-neutral-900 font-bold">No results found</p>
           </div>
@@ -208,7 +209,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                   result.position === 2 ? 'bg-slate-100 text-slate-600 border border-slate-200' :
                   result.position === 3 ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-slate-50 text-slate-400'}
               `}>
-                {result.position === 1 ? <Trophy className="w-4 h-4" /> : result.position}
+                {result.position === 1 ? '🏆' : result.position}
               </div>
 
               {/* Driver Info */}
