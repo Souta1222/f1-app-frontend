@@ -99,20 +99,21 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         }
 
         // 🛡️ CRASH PROTECTION: Filter out nulls and bad data
-        if (Array.isArray(rawData) && rawData.length > 0) {
-            const cleanData = rawData
-                .filter((item: any) => item && typeof item === 'object') // Remove nulls
-                .map((item: any) => ({
-                    position: parseInt(item.Position || item.position || '0'),
-                    driver: String(item.Driver || item.driver || 'Unknown Driver'),
-                    team: String(item.Team || item.team || 'Unknown Team'),
-                    points: parseFloat(item.Points || item.points || '0'),
-                    status: String(item.status || item.Status || 'Finished'),
-                }));
-            setResults(cleanData);
-        } else {
-            setResults([]);
-        }
+        if (Array.isArray(rawData) && (rawData as any[]).length > 0) {
+          // 👇 CAST rawData AS AN ARRAY HERE
+          const cleanData = (rawData as any[])
+              .filter((item: any) => item && typeof item === 'object') // Remove nulls
+              .map((item: any) => ({
+                  position: parseInt(item.Position || item.position || '0'),
+                  driver: String(item.Driver || item.driver || 'Unknown Driver'),
+                  team: String(item.Team || item.team || 'Unknown Team'),
+                  points: parseFloat(item.Points || item.points || '0'),
+                  status: String(item.status || item.Status || 'Finished'),
+              }));
+          setResults(cleanData);
+      } else {
+          setResults([]);
+      }
 
       } catch (e) {
         console.error("Error fetching results", e);
