@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp, RefreshCw } from 'lucide-react';
+import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp, RefreshCw, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
@@ -44,6 +44,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
   
   // 🟢 NEW: Refresh Trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
@@ -78,15 +79,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   useEffect(() => {
     const handleNewsUpdateSignal = () => {
         console.log("📣 HomeScreen: Received update signal!");
-        
-        // 1. Fetch Immediately
         setRefreshTrigger(prev => prev + 1);
-
-        // 2. Fetch again after 2 seconds (to allow file save to complete)
-        setTimeout(() => {
-            console.log("📣 HomeScreen: Double-check fetch...");
-            setRefreshTrigger(prev => prev + 1);
-        }, 2000);
     };
 
     window.addEventListener('newsUpdated', handleNewsUpdateSignal);
@@ -98,23 +91,22 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     const fetchNews = async () => {
       setIsRefreshing(true);
       try {
-        // Add timestamp to prevent browser caching
         const res = await fetch(`${API_BASE}/news/latest?t=${Date.now()}`, {
              headers: { "ngrok-skip-browser-warning": "true" }
         });
         if (res.ok) {
           const data = await res.json();
           setRealNews(data.slice(0, 5));
+          setLastUpdated(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         }
       } catch (e) {
         console.error("Failed to fetch news", e);
       } finally {
-        // Small delay for UI smoothness
         setTimeout(() => setIsRefreshing(false), 500);
       }
     };
     fetchNews();
-  }, [refreshTrigger]); // 👈 Re-runs when refreshTrigger changes
+  }, [refreshTrigger]); 
   
   if (!nextRace) return null;
 
@@ -310,8 +302,13 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 </div>
               </div>
               
-              {/* 🟢 NEW: MANUAL REFRESH BUTTON */}
+              {/* 🟢 MANUAL REFRESH BUTTON */}
               <div className={`flex items-center ${SPACING.COMPONENT_GAP}`}>
+                {lastUpdated && (
+                    <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
+                        {lastUpdated}
+                    </span>
+                )}
                 <button 
                     onClick={() => setRefreshTrigger(prev => prev + 1)}
                     disabled={isRefreshing}
@@ -319,13 +316,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 >
                     <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-green-500' : ''}`} />
                 </button>
-                <div className="flex items-center gap-1">
-                    <span className="flex h-2.5 w-2.5 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                    </span>
-                    <span className={`text-xs font-medium ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>Live</span>
-                </div>
               </div>
             </div>
             <p className={`text-sm mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
