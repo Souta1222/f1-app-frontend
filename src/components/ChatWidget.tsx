@@ -6,11 +6,13 @@ import {
   Bot, 
   Trash2, 
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
+// @ts-ignore
+import { useTheme } from './../components/ThemeContext.tsx'; // Import Hook
 
-// --- CONFIG ---
-// 🟢 YOUR BACKEND URL
+// 🟢 CONFIG: Use your functional backend URL
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 interface Message {
@@ -27,8 +29,22 @@ const QUICK_ACTIONS = [
   "Lando Norris Stats"
 ];
 
+// Consistent spacing constants
+const SPACING = {
+  SECTION_MARGIN: 'mb-8', 
+  SECTION_PADDING: 'px-3', 
+  CARD_PADDING: 'p-3', 
+  CARD_GAP: 'p-3', 
+  BORDER_WIDTH: 'border-8', 
+  BORDER_RADIUS: 'rounded-2xl', 
+  CONTENT_GAP: 'space-y-6', 
+  HEADER_MARGIN: 'mb-3', 
+  COMPONENT_GAP: 'gap-3', 
+  MESSAGE_GAP: 'gap-2', 
+} as const;
+
 // --- HELPER: Make Links Clickable ---
-const renderMessageWithLinks = (text: string) => {
+const renderMessageWithLinks = (text: string, isDark: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
 
@@ -40,7 +56,9 @@ const renderMessageWithLinks = (text: string) => {
           href={part} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="text-red-400 font-bold underline ml-1 hover:text-red-300 transition-colors"
+          className={`font-bold underline ml-1 transition-colors ${
+            isDark ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+          }`}
         >
           Read Article &rarr;
         </a>
@@ -51,19 +69,121 @@ const renderMessageWithLinks = (text: string) => {
 };
 
 export function ChatWidget() {
+  // Theme Logic
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: 1, 
       text: "🏎️ Hi! I'm your F1 Insider. I can fetch the latest news or predict race results.", 
-      sender: 'bot',
+      sender: 'bot', 
       timestamp: new Date()
     }
   ]);
   const [loading, setLoading] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  // Track window width for responsive design
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Calculate responsive width and height
+  const getChatDimensions = () => {
+    const isMobile = windowWidth < 500;
+    const isTablet = windowWidth >= 768 && windowWidth < 1024;
+    
+    if (isMobile) {
+      // Mobile: Full width with margins, taller on landscape
+      const isLandscape = windowWidth > window.innerHeight;
+      return {
+        width: 'calc(100vw - 24px)', // 12px margin on each side
+        height: isLandscape ? '80vh' : '75vh',
+        maxHeight: isLandscape ? '90vh' : '85vh',
+        maxWidth: '100%',
+        position: 'bottom-6 inset-x-3' // Centered horizontally
+      };
+    } else if (isTablet) {
+      // Tablet: Medium width
+      return {
+        width: 'min(500px, calc(100vw - 48px))',
+        height: '70vh',
+        maxHeight: '700px',
+        maxWidth: '500px',
+        position: 'bottom-24 right-6'
+      };
+    } else {
+      // Desktop: Fixed width but flexible on very large screens
+      return {
+        width: 'min(400px, calc(100vw - 48px))',
+        height: '65vh',
+        maxHeight: '600px',
+        maxWidth: '400px',
+        position: 'bottom-24 right-6'
+      };
+    }
+  };
+
+  // Border color utilities
+  const getBorderColor = (section: 'chat' | 'message' | 'input') => {
+    if (isDark) {
+      switch(section) {
+        case 'chat': return 'border-neutral-800';
+        case 'message': return 'border-neutral-700';
+        case 'input': return 'border-neutral-700';
+        default: return 'border-neutral-800';
+      }
+    } else {
+      switch(section) {
+        case 'chat': return 'border-red-200';
+        case 'message': return 'border-red-100';
+        case 'input': return 'border-slate-200';
+        default: return 'border-slate-200';
+      }
+    }
+  };
+
+  // Chat background color
+  const getChatBg = () => {
+    if (isDark) {
+      return {
+        background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+        color: '#ffffff'
+      };
+    } else {
+      return {
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+        color: '#1e293b'
+      };
+    }
+  };
+
+  // Message bubble colors
+  const getMessageStyle = (sender: 'user' | 'bot') => {
+    if (isDark) {
+      return sender === 'user' 
+        ? 'bg-red-600 text-white border-red-700' 
+        : 'bg-neutral-800 text-neutral-200 border-neutral-700';
+    } else {
+      return sender === 'user' 
+        ? 'bg-red-600 text-white border-red-500' 
+        : 'bg-slate-100 text-slate-900 border-slate-200';
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,16 +211,15 @@ export function ChatWidget() {
       const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true' // 🟢 Fixes Connection
-        }, 
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true' 
+        },
         body: JSON.stringify({ message: userMsg.text })
       });
       
       const data = await res.json();
       
-      // 🟢 NEW: BROADCAST SIGNAL
-      // If the user asked to update news, tell the Home Screen to refresh!
+      // 🟢 Signal to refresh news if requested
       if (textToSend.toLowerCase().includes("update news")) {
         console.log("📣 ChatWidget: News updated! Broadcasting signal...");
         window.dispatchEvent(new Event('newsUpdated'));
@@ -115,7 +234,6 @@ export function ChatWidget() {
       setMessages(prev => [...prev, botMsg]);
       
     } catch (e) {
-      console.error(e);
       const errorMsg: Message = { 
         id: Date.now() + 1, 
         text: "⚠️ Connection Error. Ensure app.py is running.", 
@@ -131,127 +249,244 @@ export function ChatWidget() {
     setMessages([{ 
       id: Date.now(), 
       text: "Chat cleared. What else can I help you with?", 
-      sender: 'bot',
-      timestamp: new Date()
+      sender: 'bot', 
+      timestamp: new Date() 
     }]);
   };
 
-  // --- CLOSED STATE (Floating Button) ---
-  if (!isOpen) {
-    return (
-      <button 
-        onClick={() => setIsOpen(true)}
-        style={{ 
-          position: 'fixed', 
-          bottom: '100px', 
-          right: '20px', 
-          zIndex: 99999 
-        }}
-        className="w-16 h-16 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-      >
-        <MessageSquare className="w-8 h-8 fill-current" />
-        <span className="absolute top-0 right-0 w-4 h-4 bg-green-500 border-2 border-neutral-900 rounded-full"></span>
-      </button>
-    );
-  }
-
-  // --- OPEN STATE (Chat Window) ---
+  const chatBgStyle = getChatBg();
+  const chatDimensions = getChatDimensions();
+  
   return (
-    <div 
-      style={{ zIndex: 99999 }}
-      className="fixed bottom-24 inset-x-4 md:inset-auto md:right-6 md:w-[400px] h-[65vh] max-h-[600px] bg-neutral-950 border border-neutral-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300"
-    >
+    <>
+      {/* Backdrop overlay with blur effect */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-all duration-300"
+          onClick={() => setIsOpen(false)}
+          style={{ zIndex: 99998 }}
+        />
+      )}
       
-      {/* Header */}
-      <div className="p-4 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between shrink-0 z-20 relative">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center shadow-lg">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-white font-bold text-sm flex items-center gap-2">
-              F1 Insider
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            </h3>
-            <span className="text-neutral-400 text-[10px] font-medium tracking-wide">POWERED BY AI & RSS</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={clearChat} className="p-2 hover:bg-white/10 rounded-full text-neutral-400 hover:text-white transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
-          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-neutral-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      {/* Floating Button or Chat Window */}
+      {!isOpen ? (
+        // --- CLOSED STATE (Floating Button) ---
+        <button 
+          onClick={() => setIsOpen(true)}
+          style={{ 
+            position: 'fixed', 
+            bottom: windowWidth < 768 ? '80px' : '100px', // Adjust button position on mobile
+            right: windowWidth < 768 ? '16px' : '20px',
+            zIndex: 99999 
+          }}
+          className={`${windowWidth < 768 ? 'w-14 h-14' : 'w-16 h-16'} bg-red-600 hover:bg-red-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95`}
+        >
+          <MessageSquare className={`${windowWidth < 768 ? 'w-7 h-7' : 'w-8 h-8'} fill-current`} />
+          <span className="absolute top-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full"></span>
+        </button>
+      ) : (
+        // --- OPEN STATE (Chat Window) ---
+        <div 
+          className={`fixed z-50 animate-in slide-in-from-bottom-10 fade-in duration-300 ${chatDimensions.position}`}
+          style={{ 
+            zIndex: 99999,
+            width: chatDimensions.width,
+            height: chatDimensions.height,
+            maxHeight: chatDimensions.maxHeight,
+            maxWidth: chatDimensions.maxWidth
+          }}
+        >
+          {/* Chat Container with Border */}
+          <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('chat')} h-full overflow-hidden`}>
+            {/* Outer border gap */}
+            <div className={SPACING.CARD_GAP + ' h-full'}>
+              {/* Main Chat Content */}
+              <div 
+                className={`${SPACING.BORDER_RADIUS} h-full flex flex-col overflow-hidden`}
+                style={chatBgStyle}
+              >
+                
+                {/* Header */}
+                <div className={`p-4 border-b shrink-0 ${
+                  isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white/50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`${windowWidth < 768 ? 'w-8 h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center shadow-lg ${
+                        isDark ? 'bg-gradient-to-br from-red-600 to-red-800' : 'bg-gradient-to-br from-red-500 to-red-700'
+                      }`}>
+                        <Bot className={`${windowWidth < 768 ? 'w-5 h-5' : 'w-6 h-6'} text-white`} />
+                      </div>
+                      <div>
+                        <h3 className={`font-bold ${windowWidth < 768 ? 'text-xs' : 'text-sm'} flex items-center gap-2 ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
+                          F1 Insider
+                          <span className={`w-2 h-2 rounded-full animate-pulse ${
+                            isDark ? 'bg-green-500' : 'bg-green-600'
+                          }`}></span>
+                        </h3>
+                        <span className={`${windowWidth < 768 ? 'text-[9px]' : 'text-[10px]'} font-medium tracking-wide ${
+                          isDark ? 'text-neutral-400' : 'text-slate-600'
+                        }`}>
+                          POWERED BY AI & RSS
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={clearChat} 
+                        className={`p-2 rounded-full transition-colors ${
+                          isDark 
+                            ? 'hover:bg-white/10 text-neutral-400 hover:text-white' 
+                            : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setIsOpen(false)} 
+                        className={`p-2 rounded-full transition-colors ${
+                          isDark 
+                            ? 'hover:bg-white/10 text-neutral-400 hover:text-white' 
+                            : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-      {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent bg-neutral-950 relative z-10">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 text-sm shadow-md leading-relaxed ${
-              msg.sender === 'user' 
-                ? 'bg-red-600 text-white rounded-br-sm' 
-                : 'bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-bl-sm'
-            }`}>
-              {renderMessageWithLinks(msg.text)}
+                {/* Messages List */}
+                <div className={`flex-1 overflow-y-auto p-4 ${SPACING.CONTENT_GAP} scrollbar-thin ${
+                  isDark 
+                    ? 'scrollbar-thumb-neutral-800 scrollbar-track-transparent' 
+                    : 'scrollbar-thumb-slate-300 scrollbar-track-transparent'
+                }`}>
+                  {messages.map((msg) => (
+                    <div 
+                      key={msg.id} 
+                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                    >
+                      <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('message')} max-w-[90%] ${windowWidth < 768 ? 'max-w-[95%]' : ''}`}>
+                        <div className={SPACING.CARD_GAP}>
+                          <div 
+                            className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} ${windowWidth < 768 ? 'text-xs' : 'text-sm'} shadow-md leading-relaxed border ${
+                              msg.sender === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'
+                            } ${getMessageStyle(msg.sender)}`}
+                          >
+                            {renderMessageWithLinks(msg.text, isDark)}
+                          </div>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] mt-1 px-1 ${
+                        isDark ? 'text-neutral-500' : 'text-slate-500'
+                      }`}>
+                        {msg.sender === 'user' ? 'You' : 'AI'} • {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('message')}`}>
+                        <div className={SPACING.CARD_GAP}>
+                          <div className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} border ${
+                            isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-slate-100 border-slate-200'
+                          } flex ${SPACING.MESSAGE_GAP} items-center w-fit`}>
+                            <span className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.3s] ${
+                              isDark ? 'bg-neutral-500' : 'bg-slate-400'
+                            }`}></span>
+                            <span className={`w-2 h-2 rounded-full animate-bounce [animation-delay:-0.15s] ${
+                              isDark ? 'bg-neutral-500' : 'bg-slate-400'
+                            }`}></span>
+                            <span className={`w-2 h-2 rounded-full animate-bounce ${
+                              isDark ? 'bg-neutral-500' : 'bg-slate-400'
+                            }`}></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Quick Actions */}
+                {!loading && (
+                  <div className={`px-4 pb-2 flex ${SPACING.COMPONENT_GAP} overflow-x-auto scrollbar-hide shrink-0 ${
+                    isDark ? 'bg-neutral-950/50' : 'bg-white/50'
+                  }`}>
+                    {QUICK_ACTIONS.map((action, i) => (
+                      <button 
+                        key={i}
+                        onClick={() => handleSend(action)}
+                        className={`flex-shrink-0 ${windowWidth < 768 ? 'text-[10px] px-2 py-1' : 'text-xs px-3 py-1.5'} rounded-full transition-all whitespace-nowrap active:scale-95 flex items-center ${SPACING.MESSAGE_GAP} ${
+                          isDark 
+                            ? 'bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300' 
+                            : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {action.includes("Update") ? (
+                          <RefreshCw className={`${windowWidth < 768 ? 'w-2.5 h-2.5' : 'w-3 h-3'} ${
+                            isDark ? 'text-neutral-400' : 'text-slate-500'
+                          }`} />
+                        ) : (
+                          <Zap className={`${windowWidth < 768 ? 'w-2.5 h-2.5' : 'w-3 h-3'} ${
+                            isDark ? 'text-yellow-500' : 'text-yellow-600'
+                          }`} />
+                        )}
+                        {windowWidth < 768 ? (
+                          // Shortened text for mobile
+                          action === "Update News" ? "Update News" :
+                          action === "Who is winning?" ? " Who is winning?" :
+                          action === "Ferrari News" ? " Ferrari N" :
+                          "Norris News"
+                        ) : action}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Input Area */}
+                <div className={`px-4 py-2 border-t shrink-0 ${
+                  isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white/80 border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="flex-1 relative">
+                      <input 
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        placeholder="Ask about drivers..."
+                        className={`w-full rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-0 focus:ring-offset-1 transition-all placeholder:${
+                          isDark ? 'text-neutral-400' : 'text-slate-500'
+                        } ${
+                          isDark 
+                            ? 'bg-neutral-800/90 border border-neutral-700 text-white focus:border-red-500 focus:ring-red-500/40' 
+                            : 'bg-white border border-slate-300 text-slate-900 focus:border-red-500 focus:ring-red-500/40'
+                        }`}
+                        onKeyDown={e => e.key === 'Enter' && handleSend()}
+                        disabled={loading} 
+                      />
+                    </div>
+                    <button 
+                      onClick={() => handleSend()}
+                      disabled={loading || !input.trim()}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] ${
+                        isDark 
+                          ? 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white' 
+                          : 'bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white'
+                      } disabled:opacity-50 disabled:hover:from-red-600 disabled:hover:to-red-700 disabled:hover:scale-100 disabled:shadow-md flex-shrink-0`}
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <span className="text-[10px] text-neutral-500 mt-1 px-1">
-              {msg.sender === 'user' ? 'You' : 'AI'} • {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
           </div>
-        ))}
-
-        {loading && (
-           <div className="flex justify-start">
-             <div className="bg-neutral-800 rounded-2xl p-4 rounded-bl-none border border-neutral-700 flex gap-1.5 items-center w-fit">
-                <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce"></span>
-             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick Actions */}
-      {!loading && (
-        <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide shrink-0 bg-neutral-950 z-20 relative">
-          {QUICK_ACTIONS.map((action, i) => (
-            <button 
-              key={i}
-              onClick={() => handleSend(action)}
-              className="flex-shrink-0 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 text-xs px-3 py-1.5 rounded-full transition-all whitespace-nowrap active:scale-95 flex items-center gap-1.5"
-            >
-              {action.includes("Update") ? <RefreshCw className="w-3 h-3" /> : <Sparkles className="w-3 h-3 text-yellow-500" />}
-              {action}
-            </button>
-          ))}
         </div>
       )}
-
-      {/* Input Area */}
-      <div className="p-4 bg-neutral-900 border-t border-neutral-800 shrink-0 z-30 relative">
-        <div className="relative group w-full">
-          <input 
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Ask about drivers..."
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl pl-4 pr-14 py-3.5 text-sm text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder:text-neutral-500"
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
-            disabled={loading} 
-          />
-          <button 
-            onClick={() => handleSend()}
-            disabled={loading || !input.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-red-600 hover:bg-red-500 text-white rounded-xl flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-red-600 shadow-lg"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-    </div>
+    </>
   );
 }
