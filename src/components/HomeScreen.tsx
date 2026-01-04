@@ -3,15 +3,17 @@ import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
-import { useTheme } from './ThemeContext'; 
+// @ts-ignore
+import { useTheme } from './../components/ThemeContext.tsx'; // 🟢 Team's Import Path
 import { ThemeToggle } from './ThemeToggle';
+import logo from '../styles/logo.png'; // 🟢 Team's Logo
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
 
 interface HomeScreenProps {
   onNavigateToRace: (raceId: string) => void;
-  onPredictRace: (raceId: string) => void; // 🟢 NEW PROP
+  onPredictRace: (raceId: string) => void; // 🟢 KEPT: Needed for Prediction Screen
 }
 
 interface NewsArticle {
@@ -22,7 +24,7 @@ interface NewsArticle {
   Team?: string; 
 }
 
-// Consistent spacing constants
+// 🟢 Team's Consistent Spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -43,7 +45,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
   
   // --- COUNTDOWN LOGIC ---
-  // Default to Australian GP 2026 for the demo
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
   useEffect(() => {
@@ -91,9 +92,9 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   
   if (!nextRace) return null;
 
-  // 2. Define Dynamic Styles
+  // --- DYNAMIC STYLES ---
   const containerStyle = isDark 
-    ? { backgroundColor: '#0a0a0a', color: '#ee1919' } 
+    ? { backgroundColor: '#0a0a0a', color: '#ee1919ff' } 
     : { 
         backgroundColor: '#E2E8F0',
         backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
@@ -151,23 +152,23 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
       >
         <div>
-            <p className="text-red-200 text-[10px] font-bold uppercase tracking-widest mb-1 opacity-80">Race Week Hub</p>
-            
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center transform -skew-x-12">
-                    <span className="text-red-600 font-black text-xl not-italic skew-x-12">F1</span>
-                </div>
-                <span className="text-white font-black text-xl italic tracking-tighter">
-                    INSIDER
-                </span>
+            {/* 🟢 Team's Logo Integration */}
+            <div className="flex items-center gap-2 mt-6">
+                <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
             </div>
         </div>
 
         <div className="flex items-center gap-3">
             <ThemeToggle />
-            <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center text-white shadow-inner">
-                <span className="text-xs font-bold">ME</span>
-            </div>
+        </div>
+      </div>
+
+      {/* 🟢 Team's "Race Week Hub" Badge */}
+      <div className="mt-6 mb-8 px-6">
+        <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
+          <h1 className="text-[10px] uppercase tracking-widest opacity-80">
+            Race Week Hub
+          </h1>
         </div>
       </div>
 
@@ -235,7 +236,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     ))}
                   </div>
 
-                  {/* 🟢 NEW: PREDICT BUTTON */}
+                  {/* 🟢 NEW: PREDICT BUTTON (Restored from my fix) */}
                   <Button 
                     onClick={() => onPredictRace(nextRace.id)}
                     className={`w-full font-bold uppercase tracking-widest h-12 rounded-xl shadow-lg border-0 transition-all mt-4 ${isDark ? 'bg-red-600 text-white hover:bg-red-700 border border-red-500' : 'bg-white text-slate-900 hover:bg-gray-100'}`}
@@ -259,6 +260,10 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     <h2 className="font-bold text-xl tracking-tight">Fan Pulse</h2>
                 </div>
                 </div>
+                {/* 🟢 Team's Added Text */}
+                <p className={`text-sm mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+                  Real-time sentiment from F1 fans worldwide
+                </p>
             </div>
             
             <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
