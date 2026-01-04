@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, TrendingUp, Calendar, Trophy, Crown } from 'lucide-react';
+import { ChevronLeft, Info, TrendingUp, Trophy, Crown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { races } from '../lib/data';
 
-// 🟢 INTERNAL CONFIG
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 // --- TYPES ---
@@ -43,7 +43,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   const [predictions, setPredictions] = useState<PredictionCard[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Safely find race
   const race = races.find(r => r.id === raceId);
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
     const fetchPredictions = async () => {
       try {
-        // 🟢 FIX: Single Call to Backend (Matches new app.py logic)
+        // 🟢 SINGLE CALL TO BACKEND
         const response = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
           headers: { 
@@ -74,7 +73,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             driverName: item.driver.name,
             team: item.driver.team,
             position: item.position,
-            probability: item.probability + "%", // Win probability
+            probability: item.probability + "%",
             reasons: item.reasons,
             driver: { teamColor: getTeamColor(item.driver.team) }
         }));
@@ -92,13 +91,12 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   if (!race) return null;
 
-  // --- LOADING ---
   if (loading) {
     return (
       <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">🏎️</div>
-          <p className="uppercase tracking-widest font-bold text-xs text-gray-400">Simulating Race Strategy...</p>
+          <div className="animate-spin text-4xl mb-4 text-red-600">🏎️</div>
+          <p className="uppercase tracking-widest font-bold text-xs text-gray-400">Simulating 2026 Race...</p>
         </div>
       </div>
     );
