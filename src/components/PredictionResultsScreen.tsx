@@ -205,7 +205,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
           {/* P1 (Center) */}
           {podium[0] && (
-            <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
+            <div className="flex flex-col items-center w-1/3 z-50 -mx-1 mb-2">
                <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
