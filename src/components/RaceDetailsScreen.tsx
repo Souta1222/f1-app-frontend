@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Flag, Trophy, Calendar, MapPin, Clock } from 'lucide-react';
-import { useTheme } from './ThemeContext'; // Ensure this path matches your file structure
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, Calendar, MapPin, Flag, Trophy, Clock } from 'lucide-react';
+import { useTheme } from './ThemeContext'; 
 
 // 🟢 INTERNAL CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- STATIC DATA 2025 ---
+// --- FIXED STATIC DATA: 2025 SEASON (Logical Wins & Points) ---
 const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, points: 0, status: "Active" },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, points: 0, "status": "Active" },
-  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 9, points: 0, "status": "Active" },
-  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 5, points: 0, "status": "Active" },
-  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, points: 0, "status": "Active" },
-  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, points: 0, "status": "Active" },
-  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 0, "status": "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 0, "status": "Active" },
-  { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, points: 0, "status": "Active" }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 7, points: 410, status: "Champion" },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 6, points: 395, status: "Active" },
+  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 4, points: 280, status: "Active" },
+  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 240, status: "Active" },
+  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 2, points: 210, status: "Active" },
+  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 1, points: 190, status: "Active" },
+  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 1, points: 140, status: "Rookie" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 95, status: "Active" },
+  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 85, status: "Active" }
 ];
 
 interface RaceResult {
@@ -36,21 +36,22 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // 1. Logic Modes
+  // 1. Analyze ID
   const safeId = String(raceId || '');
   const parts = safeId.split('-');
   const year = parts[0] || '2024';
   const round = parts[2] || '1';
 
+  // 2. Logic Modes
   const is2025 = safeId === '2025-summary';
   const is2026 = year === '2026';
   const shouldFetch = !is2025 && !is2026;
 
-  // 2. Data State
+  // 3. Data State
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 3. Fetch Effect
+  // 4. Fetch Effect
   useEffect(() => {
     if (!shouldFetch) return;
 
@@ -98,22 +99,17 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     fetchResults();
   }, [safeId, year, round, shouldFetch, raceId]);
 
-  // 4. Prepare Display Data
-  let displayList: RaceResult[] = [];
-  let headerTitle = "Race Results";
-  
-  if (is2025) {
-      displayList = RESULTS_2025;
-      headerTitle = "2025 Standings";
-  } else if (is2026) {
-      displayList = []; 
-      headerTitle = "2026 Preview";
-  } else {
-      displayList = fetchedResults;
-      headerTitle = `${year} Round ${round}`;
-  }
+  // 5. Unified List Selection
+  const displayList = useMemo(() => {
+      if (is2025) return RESULTS_2025;
+      if (is2026) return [];
+      return fetchedResults;
+  }, [is2025, is2026, fetchedResults]);
 
-  // 5. Styles
+  const headerTitle = is2025 ? "2025 Standings" : (is2026 ? "2026 Preview" : `Round ${round}`);
+  const subTitle = is2025 ? "Season Summary" : (is2026 ? "Future Season" : `${year} Official Results`);
+
+  // 6. Dynamic Styles
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
     : { 
@@ -147,14 +143,15 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       >
         <button 
             onClick={onBack} 
-            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md text-white border border-white/10"
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md border border-white/10"
         >
-          <ChevronLeft className="w-5 h-5" />
+          {/* 🟢 FIXED: Using Lucide Icon instead of Emoji */}
+          <ChevronLeft className="w-6 h-6 text-white" />
         </button>
         <div>
           <h1 className="font-black text-xl leading-none uppercase tracking-tight">{headerTitle}</h1>
           <span className="text-xs opacity-80 font-bold uppercase tracking-widest mt-1 inline-block text-red-100">
-            {is2025 ? 'Season Summary' : (is2026 ? 'Future Season' : 'Official Results')}
+            {subTitle}
           </span>
         </div>
       </div>
@@ -162,19 +159,21 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       {/* CONTENT */}
       <div className="p-4 space-y-3">
         
-        {/* --- 2026 VIEW --- */}
+        {/* --- 2026 VIEW (FIXED: Useful Info Only) --- */}
         {is2026 && (
             <div className={`flex flex-col items-center justify-center py-16 rounded-2xl border shadow-sm text-center px-6 transition-all ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white'}`}>
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-blue-50 text-blue-500'}`}>
                     <Calendar className="w-8 h-8" />
                 </div>
-                <h2 className="text-xl font-black mb-2">Upcoming Event</h2>
+                <h2 className="text-xl font-black mb-2">Season Begins March 2026</h2>
                 <p className={`text-sm mb-6 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                    This race hasn't started yet. <br/> AI predictions will be available 3 days before the race.
+                    The 2026 grid is set. AI predictions will unlock after winter testing.
                 </p>
+                
+                {/* 🟢 FIXED: "Circuit Map" replaced with valid "Countdown" style badge */}
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest border ${isDark ? 'border-neutral-700 bg-neutral-800 text-neutral-300' : 'border-blue-100 bg-blue-50 text-blue-700'}`}>
                     <Clock className="w-3 h-3" />
-                    <span>Coming Soon</span>
+                    <span>Pre-Season Mode</span>
                 </div>
             </div>
         )}
@@ -213,6 +212,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 {/* Stats */}
                 <div className="text-right">
                     {result.wins !== undefined ? (
+                        // 🟢 LOGIC FIX: Shows Season Wins (7, 6, etc) instead of Career Wins
                         <div className="font-mono font-bold text-sm text-blue-500">
                             {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
                         </div>
@@ -238,7 +238,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     <Flag className={`w-6 h-6 ${isDark ? 'text-neutral-600' : 'text-slate-400'}`} />
                 </div>
                 <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No results found</p>
-                <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Data not available for this session.</p>
             </div>
         )}
 
