@@ -44,30 +44,39 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     if (raceId === '2025-summary') {
         setRaceInfo({ year: '2025', round: 'Season Standings' });
         setResults(RESULTS_2025);
+        setLoading(false);
+        setIsUpcoming(false);
         return;
     }
 
-    // 2. Parse ID for API
+    // 2. Parse ID (Safety Check)
+    if (!raceId) return;
     const parts = raceId.split('-');
-    if (parts.length >= 3) {
-        const year = parts[0];
-        const round = parts[2];
-        setRaceInfo({ year, round });
+    
+    // Default values
+    let year = '2024';
+    let round = '1';
 
-        // 🟢 FIX: Detect 2026/Upcoming races and stop fetching
-        if (year === '2026') {
-            setIsUpcoming(true);
-            return;
-        }
+    if (parts.length >= 3) {
+        year = parts[0];
+        round = parts[2];
+        setRaceInfo({ year, round });
+    }
+
+    // 🟢 CRASH FIX 1: Explicitly handle 2026/Upcoming
+    if (year === '2026') {
+        setIsUpcoming(true);
+        setResults([]); // Clear results so it doesn't try to render old data
+        setLoading(false);
+        return; // 🛑 STOP HERE - Do not fetch!
+    } else {
+        setIsUpcoming(false);
     }
 
     // 3. Fetch Details from Backend (Only for past races)
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const [year, , round] = raceId.split('-');
-        
-        // Try Main API
         const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
         const res = await fetch(url, {
             method: "GET",
@@ -77,18 +86,21 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         });
         
-        let rawData = [];
+        let rawData = null;
         if (res.ok) {
-          rawData = await res.json();
+           rawData = await res.json();
         } else {
-           // Fallback API
-           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
-           if(resFallback.ok) {
-               rawData = await resFallback.json();
+           // Fallback attempt
+           try {
+             const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
+             if (resFallback.ok) rawData = await resFallback.json();
+           } catch (err) {
+             console.log("Fallback failed");
            }
         }
 
-        // 🟢 FIX: Crash Protection (Ensure rawData is actually an Array)
+        // 🟢 CRASH FIX 2: Strict Array Check
+        // If API returns an error object { error: "Not found" }, this prevents the map() crash
         if (Array.isArray(rawData) && rawData.length > 0) {
             const cleanData = rawData.map((item: any) => ({
                 position: parseInt(item.Position || item.position || '0'),
@@ -99,7 +111,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }));
             setResults(cleanData);
         } else {
-            setResults([]); // No results found, but don't crash
+            console.warn("API returned invalid data or empty list");
+            setResults([]);
         }
 
       } catch (e) {
@@ -112,10 +125,10 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     fetchResults();
   }, [raceId]);
 
-  // Helper for Team Colors
-  const getTeamColor = (teamName: string) => {
+  // Helper for Team Colors (Safe against undefined)
+  const getTeamColor = (teamName: string | undefined) => {
     if (!teamName) return '#94a3b8';
-    const t = teamName.toLowerCase();
+    const t = String(teamName).toLowerCase();
     if (t.includes('red bull')) return '#3671C6';
     if (t.includes('ferrari')) return '#D92A32';
     if (t.includes('mercedes')) return '#00A19C';
@@ -176,10 +189,13 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
              <div className="animate-spin text-4xl mb-4 text-red-700">🏎️</div>
              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Fetching Data...</p>
           </div>
-        ) : results.length === 0 ? (
+        ) : (!results || results.length === 0) ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
+             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Flag className="w-6 h-6 text-gray-400" />
+            </div>
             <p className="text-neutral-900 font-bold">No results found</p>
-            <p className="text-neutral-500 text-xs mt-1">This race might not have happened yet.</p>
+            <p className="text-neutral-500 text-xs mt-1">This race data might be missing.</p>
           </div>
         ) : (
           results.map((result, index) => (
@@ -203,7 +219,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
               </div>
 
-              {/* Stats: Shows Wins for 2025, Points for others */}
+              {/* Stats */}
               <div className="text-right">
                 {result.wins !== undefined ? (
                     <div className="font-mono font-bold text-sm text-blue-600">{result.wins} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span></div>
