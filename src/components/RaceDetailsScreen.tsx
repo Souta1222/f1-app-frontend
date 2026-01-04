@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Calendar, Flag, Trophy, Clock } from 'lucide-react';
+import { ChevronLeft, Calendar, Flag, Trophy, Clock, Medal } from 'lucide-react';
 import { useTheme } from './ThemeContext'; 
 
 // 🟢 INTERNAL CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- FIXED STATIC DATA: 2025 SEASON (Derived from your CSV) ---
+// --- FIXED STATIC DATA: 2025 SEASON ---
+// Logic: Lando (8 Wins) beat Max (8 Wins) on Points Consistency (420 vs 380)
 const RESULTS_2025 = [
   { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion" },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active" },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 8, points: 380, status: "Active" },
   { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 7, points: 300, status: "Active" },
   { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 250, status: "Active" },
   { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 0, points: 200, status: "Active" },
@@ -233,9 +234,17 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         </div>
                     )}
                     
-                    {result.status && result.status !== 'Finished' && result.status !== 'Active' && (
-                        <div className="mt-1">
-                             <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded">{result.status}</span>
+                    {/* Status Badge */}
+                    {result.status === 'Champion' && (
+                         <div className="mt-1 flex justify-end">
+                             <span className="flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">
+                                <Medal className="w-2 h-2" /> CHAMPION
+                             </span>
+                        </div>
+                    )}
+                    {result.status === 'Rookie' && (
+                         <div className="mt-1 flex justify-end">
+                             <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded">ROOKIE</span>
                         </div>
                     )}
                 </div>
