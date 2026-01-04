@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, Newspaper, Zap, MapPin } from 'lucide-react';
+import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
-// 🟢 FIX 1: Clean Import
 import { useTheme } from './ThemeContext'; 
 import { ThemeToggle } from './ThemeToggle';
 
@@ -12,6 +11,7 @@ const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 interface HomeScreenProps {
   onNavigateToRace: (raceId: string) => void;
+  onPredictRace: (raceId: string) => void; // 🟢 NEW PROP
 }
 
 interface NewsArticle {
@@ -35,7 +35,7 @@ const SPACING = {
   COMPONENT_GAP: 'gap-3',
 } as const;
 
-export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
+export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -43,6 +43,7 @@ export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
   
   // --- COUNTDOWN LOGIC ---
+  // Default to Australian GP 2026 for the demo
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
   useEffect(() => {
@@ -152,7 +153,6 @@ export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
         <div>
             <p className="text-red-200 text-[10px] font-bold uppercase tracking-widest mb-1 opacity-80">Race Week Hub</p>
             
-            {/* 🟢 NEW: Text & Icon Logo (No Image File Needed!) */}
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center transform -skew-x-12">
                     <span className="text-red-600 font-black text-xl not-italic skew-x-12">F1</span>
@@ -235,12 +235,13 @@ export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
                     ))}
                   </div>
 
+                  {/* 🟢 NEW: PREDICT BUTTON */}
                   <Button 
-                    onClick={() => onNavigateToRace(nextRace.id)}
+                    onClick={() => onPredictRace(nextRace.id)}
                     className={`w-full font-bold uppercase tracking-widest h-12 rounded-xl shadow-lg border-0 transition-all mt-4 ${isDark ? 'bg-red-600 text-white hover:bg-red-700 border border-red-500' : 'bg-white text-slate-900 hover:bg-gray-100'}`}
                   >
                     View AI Prediction
-                    <ChevronRight className={`w-4 h-4 ml-2 ${isDark ? 'text-white' : 'text-red-600'}`} />
+                    <TrendingUp className={`w-4 h-4 ml-2 ${isDark ? 'text-white' : 'text-red-600'}`} />
                   </Button>
                 </div>
               </div>
