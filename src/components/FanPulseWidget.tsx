@@ -315,7 +315,7 @@ export function FanPulseWidget() {
                       setRatingType('team');
                       setIsRatingOpen(true);
                     }}
-                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white`}
+                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white`}
                   >
                     <Users className="w-3 h-3" />
                     Rate Team
