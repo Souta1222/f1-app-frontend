@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Flag, Trophy, Calendar, MapPin } from 'lucide-react';
 
 // 🟢 YOUR BACKEND URL
-const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';  
+const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
 
 // --- STATIC DATA: 2025 RESULTS ---
 const RESULTS_2025 = [
@@ -49,11 +49,11 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         return;
     }
 
-    // 2. Parse ID (Safety Check)
-    if (!raceId) return;
-    const parts = raceId.split('-');
-    
-    // Default values
+    // 2. Safe ID Parsing
+    const safeId = String(raceId || ''); // 🛡️ Prevent undefined crash
+    if (!safeId) return;
+
+    const parts = safeId.split('-');
     let year = '2024';
     let round = '1';
 
@@ -63,55 +63,54 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         setRaceInfo({ year, round });
     }
 
-    // 🟢 CRASH FIX 1: Explicitly handle 2026/Upcoming
+    // 3. Handle Upcoming Races (2026)
     if (year === '2026') {
         setIsUpcoming(true);
-        setResults([]); // Clear results so it doesn't try to render old data
+        setResults([]); 
         setLoading(false);
-        return; // 🛑 STOP HERE - Do not fetch!
+        return; // 🛑 STOP: Do not fetch data for 2026
     } else {
         setIsUpcoming(false);
     }
 
-    // 3. Fetch Details from Backend (Only for past races)
+    // 4. Fetch Details (For 2023/2024)
     const fetchResults = async () => {
       setLoading(true);
       try {
         const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
-        const res = await fetch(url, {
-            method: "GET",
-            headers: {
-                "ngrok-skip-browser-warning": "true",
-                "Content-Type": "application/json"
-            }
-        });
+        const headers = { 
+            "ngrok-skip-browser-warning": "true",
+            "Content-Type": "application/json"
+        };
+
+        const res = await fetch(url, { method: "GET", headers });
         
         let rawData = null;
         if (res.ok) {
            rawData = await res.json();
         } else {
-           // Fallback attempt
+           // Fallback with HEADERS (Fixes 403 Forbidden)
            try {
-             const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`);
+             const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
              if (resFallback.ok) rawData = await resFallback.json();
            } catch (err) {
              console.log("Fallback failed");
            }
         }
 
-        // 🟢 CRASH FIX 2: Strict Array Check
-        // If API returns an error object { error: "Not found" }, this prevents the map() crash
+        // 🛡️ CRASH PROTECTION: Filter out nulls and bad data
         if (Array.isArray(rawData) && rawData.length > 0) {
-            const cleanData = rawData.map((item: any) => ({
-                position: parseInt(item.Position || item.position || '0'),
-                driver: item.Driver || item.driver || 'Unknown Driver',
-                team: item.Team || item.team || 'Unknown Team',
-                points: parseFloat(item.Points || item.points || '0'),
-                status: item.status || item.Status || 'Finished',
-            }));
+            const cleanData = rawData
+                .filter((item: any) => item && typeof item === 'object') // Remove nulls
+                .map((item: any) => ({
+                    position: parseInt(item.Position || item.position || '0'),
+                    driver: String(item.Driver || item.driver || 'Unknown Driver'),
+                    team: String(item.Team || item.team || 'Unknown Team'),
+                    points: parseFloat(item.Points || item.points || '0'),
+                    status: String(item.status || item.Status || 'Finished'),
+                }));
             setResults(cleanData);
         } else {
-            console.warn("API returned invalid data or empty list");
             setResults([]);
         }
 
@@ -125,8 +124,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     fetchResults();
   }, [raceId]);
 
-  // Helper for Team Colors (Safe against undefined)
-  const getTeamColor = (teamName: string | undefined) => {
+  // Helper for Team Colors
+  const getTeamColor = (teamName: string) => {
     if (!teamName) return '#94a3b8';
     const t = String(teamName).toLowerCase();
     if (t.includes('red bull')) return '#3671C6';
@@ -171,8 +170,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        {/* 🟢 HANDLING UPCOMING RACES (2026) */}
         {isUpcoming ? (
+            // 🟢 2026 View (Safe Mode)
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <Calendar className="w-16 h-16 text-blue-500 mb-4" />
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
@@ -195,7 +194,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <Flag className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-neutral-900 font-bold">No results found</p>
-            <p className="text-neutral-500 text-xs mt-1">This race data might be missing.</p>
           </div>
         ) : (
           results.map((result, index) => (
@@ -229,7 +227,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 
                 <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
                     <span className="text-slate-500 font-medium flex items-center gap-1">
-                        {result.status}
+                        {String(result.status)}
                     </span>
                 </div>
               </div>
