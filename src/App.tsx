@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Home, Calendar, Users, Trophy } from 'lucide-react';
+import { Home, Calendar, Users } from 'lucide-react'; // ❌ Removed Trophy
 import { HomeScreen } from './components/HomeScreen';
 import { RaceSelectionScreen } from './components/RaceSelectionScreen';
 import { DriversScreen } from './components/DriversScreen';
-import { ConstructorsScreen } from './components/ConstructorsScreen';
+// ❌ Removed ConstructorsScreen import
 import { RaceDetailsScreen } from './components/RaceDetailsScreen';
 import { ChatWidget } from './components/ChatWidget';
-import { ThemeProvider } from './components/ThemeContext'; // removed .tsx extension
+import { ThemeProvider } from './components/ThemeContext'; 
 
-type Screen = 'home' | 'races' | 'drivers' | 'constructors';
+// ❌ Removed 'constructors' from type
+type Screen = 'home' | 'races' | 'drivers';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -25,10 +26,8 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    // --- SMART ROUTING LOGIC (FIXED) ---
+    // --- SMART ROUTING LOGIC ---
     if (selectedRaceId) {
-      // 🟢 CHANGE: We now send EVERY race ID to the RaceDetailsScreen
-      // This ensures 2025 and 2026 use the file we just fixed.
       return (
         <RaceDetailsScreen 
           raceId={selectedRaceId} 
@@ -41,7 +40,7 @@ export default function App() {
       case 'home': return <HomeScreen onNavigateToRace={handleRaceSelect} />;
       case 'races': return <RaceSelectionScreen onRaceSelect={handleRaceSelect} />;
       case 'drivers': return <DriversScreen />;
-      case 'constructors': return <ConstructorsScreen />;
+      // ❌ Removed constructors case
       default: return <HomeScreen onNavigateToRace={handleRaceSelect} />;
     }
   };
@@ -78,12 +77,7 @@ export default function App() {
                 <Users className="w-6 h-6" /><span className="text-xs mt-1">Drivers</span>
               </button>
               
-              <button 
-                onClick={() => handleNavigate('constructors')} 
-                className={`flex flex-col items-center justify-center flex-1 h-full ${currentScreen === 'constructors' ? 'text-red-500' : 'text-neutral-400'}`}
-              >
-                <Trophy className="w-6 h-6" /><span className="text-xs mt-1">Teams</span>
-              </button>
+              {/* ❌ Removed Teams/Constructors Button */}
             </div>
           </nav>
         )}
