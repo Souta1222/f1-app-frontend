@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'; // 🟢 Added useCallback
-import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
@@ -13,7 +13,7 @@ const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 interface HomeScreenProps {
   onNavigateToRace: (raceId: string) => void;
-  onPredictRace: (raceId: string) => void;
+  onPredictRace: (raceId: string) => void; 
 }
 
 interface NewsArticle {
@@ -24,6 +24,7 @@ interface NewsArticle {
   Team?: string; 
 }
 
+// Consistent Spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -42,8 +43,9 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
 
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // 🟢 NEW: Trigger state to force re-fetching
+  // 🟢 NEW: Refresh Trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
   // --- COUNTDOWN LOGIC ---
@@ -72,28 +74,31 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     return () => clearInterval(interval);
   }, [nextRace]);
 
-  // --- 🟢 NEW: LISTENER FOR CHATBOT UPDATES ---
+  // --- 🟢 ROBUST LISTENER FOR CHATBOT UPDATES ---
   useEffect(() => {
-    // This function runs when ChatWidget says "newsUpdated"
     const handleNewsUpdateSignal = () => {
-        console.log("📣 HomeScreen: Received update signal! Refreshing news...");
-        setRefreshTrigger(prev => prev + 1); // This triggers the fetch effect below
+        console.log("📣 HomeScreen: Received update signal!");
+        
+        // 1. Fetch Immediately
+        setRefreshTrigger(prev => prev + 1);
+
+        // 2. Fetch again after 2 seconds (to allow file save to complete)
+        setTimeout(() => {
+            console.log("📣 HomeScreen: Double-check fetch...");
+            setRefreshTrigger(prev => prev + 1);
+        }, 2000);
     };
 
     window.addEventListener('newsUpdated', handleNewsUpdateSignal);
-
-    // Cleanup listener when screen unmounts
-    return () => {
-        window.removeEventListener('newsUpdated', handleNewsUpdateSignal);
-    };
+    return () => window.removeEventListener('newsUpdated', handleNewsUpdateSignal);
   }, []);
 
-  // --- FETCH NEWS (Depends on refreshTrigger) ---
+  // --- FETCH NEWS ---
   useEffect(() => {
     const fetchNews = async () => {
+      setIsRefreshing(true);
       try {
-        console.log("🔄 Fetching latest news...");
-        // Add timestamp to prevent caching
+        // Add timestamp to prevent browser caching
         const res = await fetch(`${API_BASE}/news/latest?t=${Date.now()}`, {
              headers: { "ngrok-skip-browser-warning": "true" }
         });
@@ -103,10 +108,13 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         }
       } catch (e) {
         console.error("Failed to fetch news", e);
+      } finally {
+        // Small delay for UI smoothness
+        setTimeout(() => setIsRefreshing(false), 500);
       }
     };
     fetchNews();
-  }, [refreshTrigger]); // 👈 Runs whenever refreshTrigger changes
+  }, [refreshTrigger]); // 👈 Re-runs when refreshTrigger changes
   
   if (!nextRace) return null;
 
@@ -301,12 +309,23 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                   <h2 className="font-bold text-xl tracking-tight">Trending News</h2>
                 </div>
               </div>
+              
+              {/* 🟢 NEW: MANUAL REFRESH BUTTON */}
               <div className={`flex items-center ${SPACING.COMPONENT_GAP}`}>
-                <span className="flex h-2.5 w-2.5 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
-                </span>
-                <span className={`text-xs font-medium ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>Live</span>
+                <button 
+                    onClick={() => setRefreshTrigger(prev => prev + 1)}
+                    disabled={isRefreshing}
+                    className={`p-2 rounded-full transition-all active:scale-95 ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-white hover:bg-gray-100 text-slate-600 shadow-sm'}`}
+                >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-green-500' : ''}`} />
+                </button>
+                <div className="flex items-center gap-1">
+                    <span className="flex h-2.5 w-2.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                    </span>
+                    <span className={`text-xs font-medium ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>Live</span>
+                </div>
               </div>
             </div>
             <p className={`text-sm mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
