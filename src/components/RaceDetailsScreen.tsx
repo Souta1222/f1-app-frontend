@@ -1,33 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Calendar, Flag, Trophy, Clock, Medal } from 'lucide-react';
+import { ChevronLeft, Calendar, Flag, Trophy, Clock, Medal, Info } from 'lucide-react';
 import { useTheme } from './ThemeContext'; 
 
 // 🟢 INTERNAL CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- FIXED STATIC DATA: 2025 SEASON ---
-// Logic: Lando (8 Wins) beat Max (8 Wins) on Points Consistency (420 vs 380)
+// --- FIXED STATIC DATA: 2025 SEASON (With AI Interpretations) ---
 const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion" },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 8, points: 380, status: "Active" },
-  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 7, points: 300, status: "Active" },
-  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 250, status: "Active" },
-  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 0, points: 200, status: "Active" },
-  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 0, points: 180, status: "Active" },
-  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 150, status: "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 100, status: "Active" },
-  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 80, status: "Active" },
-  { position: 10, driver: "Fernando Alonso", "team": "Aston Martin", wins: 0, points: 50, status: "Active" },
-  { position: 11, driver: "Nico Hülkenberg", "team": "Kick Sauber", wins: 0, points: 45, status: "Active" },
-  { position: 12, driver: "Yuki Tsunoda", "team": "Red Bull", wins: 0, points: 40, status: "Active" },
-  { position: 13, driver: "Isack Hadjar", "team": "Racing Bulls", wins: 0, points: 35, status: "Rookie" },
-  { position: 14, driver: "Oliver Bearman", "team": "Haas", wins: 0, points: 30, status: "Active" },
-  { position: 15, driver: "Liam Lawson", "team": "Racing Bulls", wins: 0, points: 25, status: "Active" },
-  { position: 16, driver: "Esteban Ocon", "team": "Haas", wins: 0, points: 20, status: "Active" },
-  { position: 17, driver: "Lance Stroll", "team": "Aston Martin", wins: 0, points: 15, status: "Active" },
-  { position: 18, driver: "Pierre Gasly", "team": "Alpine", wins: 0, points: 10, status: "Active" },
-  { position: 19, driver: "Gabriel Bortoleto", "team": "Kick Sauber", wins: 0, points: 5, status: "Rookie" },
-  { position: 20, driver: "Franco Colapinto", "team": "Alpine", wins: 0, points: 0, status: "Active" }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion", details: "Clinched his maiden World Title with 8 wins and 19 podiums, showing supreme consistency over Verstappen." },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active", details: "Won the most races (9) this season, but reliability issues and DNFs cost him the championship fight." },
+  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 7, points: 300, status: "Active", details: "A breakout superstar season with 7 wins, securing the Constructors' Championship for McLaren." },
+  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 250, status: "Active", details: "Led the Mercedes charge with 3 wins, establishing himself as the team leader over rookie Antonelli." },
+  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 0, points: 200, status: "Active", details: "Dominated qualifying with poles but struggled with race pace and tire degradation against McLaren." },
+  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 0, points: 180, status: "Active", details: "Solid debut season in Red; consistent points finishes while adapting to the Ferrari car characteristics." },
+  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 150, status: "Rookie", details: "Sensational rookie performance with 3 podiums, proving he belongs in a top seat at just 19." },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 100, status: "Active", details: "Overachieved in the Williams, consistently dragging the car into Q3 and top-6 finishes." },
+  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 80, status: "Active", details: "Brought veteran stability to Williams, forming a formidable midfield partnership with Albon." },
+  { position: 10, driver: "Fernando Alonso", "team": "Aston Martin", wins: 0, points: 50, status: "Active", details: "Defied age at 44, using unmatched racecraft to snatch points despite a difficult car." },
+  { position: 11, driver: "Nico Hülkenberg", "team": "Kick Sauber", wins: 0, points: 45, status: "Active", details: "Consistent midfield runner, extracting maximum value from the Audi-transitioning Sauber." },
+  { position: 12, driver: "Yuki Tsunoda", "team": "Red Bull", wins: 0, points: 40, status: "Active", details: "Promoted to the top Red Bull seat but struggled to match Verstappen's relentless pace." },
+  { position: 13, driver: "Isack Hadjar", "team": "Racing Bulls", wins: 0, points: 35, status: "Rookie", details: "Rookie highlight: Scored a shock podium in a chaotic wet race, showing flashes of brilliance." },
+  { position: 14, driver: "Oliver Bearman", "team": "Haas", wins: 0, points: 30, status: "Active", details: "Quiet but steady rookie season for Haas, minimizing errors and learning the tracks." },
+  { position: 15, driver: "Liam Lawson", "team": "Racing Bulls", wins: 0, points: 25, status: "Active", details: "Returned to full-time racing, matching his teammate closely in the midfield battle." },
+  { position: 16, driver: "Esteban Ocon", "team": "Haas", wins: 0, points: 20, status: "Active", details: "Brought aggression to Haas, occasionally clashing with rivals but securing vital team points." },
+  { position: 17, driver: "Lance Stroll", "team": "Aston Martin", wins: 0, points: 15, status: "Active", details: "Inconsistent season, occasionally flashing top-10 pace but fading in races." },
+  { position: 18, driver: "Pierre Gasly", "team": "Alpine", wins: 0, points: 10, status: "Active", details: "Plagued by Alpine's mechanical reliability issues, limiting his ability to score." },
+  { position: 19, driver: "Gabriel Bortoleto", "team": "Kick Sauber", wins: 0, points: 5, status: "Rookie", details: "Steep learning curve in F1, but showed raw qualifying speed in the second half." },
+  { position: 20, driver: "Franco Colapinto", "team": "Alpine", wins: 0, points: 0, status: "Active", details: "Struggled with the difficult handling of the Alpine in his first full season." }
 ];
 
 interface RaceResult {
@@ -37,6 +36,7 @@ interface RaceResult {
   points?: number;
   wins?: number;
   status: string;
+  details?: string; // Added details field
 }
 
 interface RaceDetailsScreenProps {
@@ -203,51 +203,61 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         {displayList.map((result, index) => (
             <div 
                 key={index}
-                className={`p-3 mb-2 rounded-xl shadow-sm flex items-center gap-4 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
+                className={`p-3 mb-2 rounded-xl shadow-sm flex flex-col gap-2 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
                 style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
             >
-                {/* Position */}
-                <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
-                    result.position === 1 ? 'bg-yellow-100 text-yellow-700' : 
-                    result.position === 2 ? 'bg-slate-200 text-slate-700' : 
-                    result.position === 3 ? 'bg-orange-100 text-orange-800' : 
-                    (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
-                }`}>
-                    {result.position === 1 ? <Trophy className="w-4 h-4" /> : result.position}
+                {/* Top Row: Pos, Name, Points */}
+                <div className="flex items-center gap-4">
+                    {/* Position */}
+                    <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
+                        result.position === 1 ? 'bg-yellow-100 text-yellow-700' : 
+                        result.position === 2 ? 'bg-slate-200 text-slate-700' : 
+                        result.position === 3 ? 'bg-orange-100 text-orange-800' : 
+                        (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
+                    }`}>
+                        {result.position === 1 ? <Trophy className="w-4 h-4" /> : result.position}
+                    </div>
+
+                    {/* Driver */}
+                    <div className="flex-1 min-w-0">
+                        <div className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.driver}</div>
+                        <div className={`text-[10px] font-bold uppercase tracking-wide truncate ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>{result.team}</div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="text-right">
+                        {result.wins !== undefined && result.wins > 0 ? (
+                            <div className="font-mono font-bold text-sm text-blue-500">
+                                {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
+                            </div>
+                        ) : (
+                            <div className="font-mono font-bold text-sm text-green-500">
+                                +{result.points} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>PTS</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Driver */}
-                <div className="flex-1 min-w-0">
-                    <div className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.driver}</div>
-                    <div className={`text-[10px] font-bold uppercase tracking-wide truncate ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>{result.team}</div>
-                </div>
-
-                {/* Stats */}
-                <div className="text-right">
-                    {result.wins !== undefined && result.wins > 0 ? (
-                        <div className="font-mono font-bold text-sm text-blue-500">
-                            {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
-                        </div>
-                    ) : (
-                        <div className="font-mono font-bold text-sm text-green-500">
-                            +{result.points} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>PTS</span>
-                        </div>
-                    )}
-                    
-                    {/* Status Badge */}
-                    {result.status === 'Champion' && (
-                         <div className="mt-1 flex justify-end">
-                             <span className="flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">
-                                <Medal className="w-2 h-2" /> CHAMPION
-                             </span>
-                        </div>
+                {/* 🟢 NEW: AI DETAILS SECTION (Visible only for 2025) */}
+                {result.details && (
+                    <div className={`mt-1 pl-12 pr-2 py-2 rounded-lg text-xs leading-relaxed flex gap-2 items-start ${isDark ? 'bg-neutral-800/50 text-neutral-400' : 'bg-slate-50 text-slate-600'}`}>
+                        <Info className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />
+                        <span>{result.details}</span>
+                    </div>
+                )}
+                
+                {/* Badges */}
+                <div className="flex justify-end gap-2 pl-12">
+                     {result.status === 'Champion' && (
+                         <span className="flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">
+                            <Medal className="w-2 h-2" /> CHAMPION
+                         </span>
                     )}
                     {result.status === 'Rookie' && (
-                         <div className="mt-1 flex justify-end">
-                             <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded">ROOKIE</span>
-                        </div>
+                         <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded border border-purple-200">ROOKIE</span>
                     )}
                 </div>
+
             </div>
         ))}
 
