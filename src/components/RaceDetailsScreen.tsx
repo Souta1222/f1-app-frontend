@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// 🟢 SAFE MODE: Local Config
+// 🟢 1. INTERNAL CONFIG (No Import Errors)
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- STATIC DATA ---
+// 🟢 2. STATIC DATA
 const RESULTS_2025 = [
   { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, points: 0, status: "Active" },
   { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, points: 0, "status": "Active" },
@@ -12,7 +12,7 @@ const RESULTS_2025 = [
   { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, points: 0, "status": "Active" },
   { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, points: 0, "status": "Active" },
   { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 0, "status": "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 0, "status": "Active" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", "wins": 0, points: 0, "status": "Active" },
   { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, points: 0, "status": "Active" }
 ];
 
@@ -31,26 +31,27 @@ interface RaceDetailsScreenProps {
 }
 
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
-  // 1. Analyze ID immediately (Computed State)
+  // 🟢 3. IMMEDIATE LOGIC (No useEffect required for these)
+  // This runs instantly, preventing "Flash of Wrong Content" or Loops
   const safeId = String(raceId || '');
   const parts = safeId.split('-');
   const year = parts[0] || '2024';
   const round = parts[2] || '1';
 
-  // 2. Determine Mode
+  // Determine the "Mode" instantly based on the ID
   const is2025Summary = safeId === '2025-summary';
   const is2026Upcoming = year === '2026';
-  
-  // State for fetched results only
+  const shouldFetch = !is2025Summary && !is2026Upcoming;
+
+  // State for Fetching Only
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 3. Effect: Only fetch if NOT 2025/2026
+  // 🟢 4. SAFE FETCH EFFECT
   useEffect(() => {
-    if (is2025Summary || is2026Upcoming) return; // 🛑 Skip fetch for static pages
+    // If we don't need to fetch, STOP immediately.
+    if (!shouldFetch) return;
 
-    console.log("Fetching for:", year, round); // 🔍 Debug Log
-    
     const fetchResults = async () => {
       setLoading(true);
       try {
@@ -73,7 +74,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // Sanitization
+        // Parse Data safely
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -94,23 +95,27 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         }
 
       } catch (e) {
-        console.error("Fetch error:", e);
+        console.error("Fetch Error:", e);
         setFetchedResults([]);
       }
       setLoading(false);
     };
 
     fetchResults();
-  }, [safeId, year, round, is2025Summary, is2026Upcoming]);
+  }, [safeId, year, round, shouldFetch, raceId]);
 
-  // 4. Determine Data to Show
-  const activeResults = useMemo(() => {
-    if (is2025Summary) return RESULTS_2025;
-    if (is2026Upcoming) return [];
-    return fetchedResults;
-  }, [is2025Summary, is2026Upcoming, fetchedResults]);
+  // 🟢 5. DECIDE WHAT TO SHOW
+  // We pick the correct list based on the "Mode" we calculated at the top
+  let activeResults: RaceResult[] = [];
+  if (is2025Summary) {
+      activeResults = RESULTS_2025;
+  } else if (shouldFetch) {
+      activeResults = fetchedResults;
+  }
+  // For 2026, activeResults is empty (handled by UI check)
 
-  // Helper
+
+  // Helper for Colors
   const getTeamColor = (teamName: string) => {
     if (!teamName) return '#94a3b8';
     const t = String(teamName).toLowerCase();
@@ -142,6 +147,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             onClick={onBack} 
             className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white backdrop-blur-md"
         >
+          {/* EMOJI BUTTON (Crash Proof) */}
           <span className="text-xl">⬅️</span>
         </button>
         <div>
@@ -157,7 +163,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       {/* Content Area */}
       <div className="p-4 space-y-3">
         
-        {/* CASE 1: 2026 UPCOMING VIEW */}
+        {/* VIEW 1: 2026 UPCOMING */}
         {is2026Upcoming && (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
@@ -172,15 +178,15 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             </div>
         )}
 
-        {/* CASE 2: LOADING */}
-        {!is2026Upcoming && loading && (
+        {/* VIEW 2: LOADING */}
+        {shouldFetch && loading && (
           <div className="flex flex-col items-center justify-center py-20">
              <div className="animate-spin text-4xl mb-4 text-red-700">🏎️</div>
              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Fetching Data...</p>
           </div>
         )}
 
-        {/* CASE 3: RESULTS LIST (2025 or FETCHED) */}
+        {/* VIEW 3: RESULTS LIST (2025 or Fetch) */}
         {!is2026Upcoming && !loading && (
             <>
                 {(!activeResults || activeResults.length === 0) ? (
