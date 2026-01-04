@@ -44,19 +44,18 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 ROBUST FETCH: Shows all data, even if names don't match perfectly
+  // 🟢 ROBUST FETCH: Shows all data
   const fetchData = async () => {
     try {
-      const res = await fetch(`${API_BASE}/community/ratings`);
+      // Add timestamp to prevent caching
+      const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`);
       if (res.ok) {
         const allData: RatingData[] = await res.json();
         
-        // 1. Get List of known Team Names
+        // Known names
         const knownTeamNames = allTeamsList.map(t => t.name);
         
-        // 2. Split Data
-        // If the name is in our Team list -> It's a Team
-        // Otherwise -> Assume it's a Driver
+        // Split Data
         const teamsData = allData.filter(d => knownTeamNames.includes(d.driver_name));
         const driversData = allData.filter(d => !knownTeamNames.includes(d.driver_name));
 
@@ -246,7 +245,7 @@ export function FanPulseWidget() {
                     </div>
                   </div>
 
-                {/* 🟢 Rate Team Button (Fixed Visibility) */}
+                {/* 🟢 Rate Team Button (Fixed Visibility: RED) */}
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { 
@@ -254,7 +253,7 @@ export function FanPulseWidget() {
                       setRatingType('team');
                       setIsRatingOpen(true);
                     }}
-                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white`}
+                    className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white`}
                   >
                     <Users className="w-3 h-3" />
                     Rate Team
@@ -302,7 +301,7 @@ export function FanPulseWidget() {
                     onClick={() => { setRatingType('team'); setSelectedEntity(allTeamsList[0].name); }}
                     className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
                       ratingType === 'team'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-red-600 text-white'
                         : 'text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
@@ -315,9 +314,7 @@ export function FanPulseWidget() {
                   <select 
                     value={selectedEntity}
                     onChange={(e) => setSelectedEntity(e.target.value)}
-                    className={`w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl px-4 py-3 text-neutral-900 dark:text-white font-bold appearance-none focus:outline-none focus:ring-2 ${
-                      ratingType === 'driver' ? 'focus:ring-red-500' : 'focus:ring-indigo-500'
-                    }`}
+                    className={`w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl px-4 py-3 text-neutral-900 dark:text-white font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-red-500`}
                   >
                     {(ratingType === 'driver' ? allDriversList : allTeamsList).map(item => (
                       <option 
@@ -342,7 +339,7 @@ export function FanPulseWidget() {
                     min="1" max="10" 
                     value={userRating}
                     onChange={(e) => setUserRating(Number(e.target.value))}
-                    className={`w-full h-2 bg-gray-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer ${ratingType === 'driver' ? 'accent-red-600' : 'accent-indigo-600'}`}
+                    className={`w-full h-2 bg-gray-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-red-600`}
                   />
                 </div>
 
@@ -365,7 +362,7 @@ export function FanPulseWidget() {
 
                 <button 
                   onClick={handleSubmit}
-                  className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider ${ratingType === 'driver' ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white`}
+                  className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white`}
                 >
                   <Send className="w-4 h-4" />
                   Submit
