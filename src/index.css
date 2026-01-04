@@ -173,7 +173,13 @@
     text-decoration: underline dotted;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1 {
+  font-size: 30px;
+  font-weight: bold;
+}
+
+
+  h2, h3, h4, h5, h6 {
     font-size: inherit;
     font-weight: inherit;
   }
@@ -1156,6 +1162,10 @@
 
   .bg-green-500 {
     background-color: var(--color-green-500);
+  }
+
+  .bg-green-500 {
+    background-color: #0f172a;
   }
 
   .bg-green-600\/20 {
