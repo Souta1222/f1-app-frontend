@@ -1,32 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Calendar, Flag, Trophy, Clock, Medal, Info } from 'lucide-react';
-import { useTheme } from './ThemeContext'; 
+import { ChevronLeft, Calendar, Flag, Trophy, Clock, Medal, Info, MapPin } from 'lucide-react';
+// @ts-ignore
+import { useTheme } from './../components/ThemeContext.tsx'; 
 
-// 🟢 INTERNAL CONFIG
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// --- FIXED STATIC DATA: 2025 SEASON (With AI Interpretations) ---
+// --- TEAM'S SPACING CONSTANTS ---
+const SPACING = {
+  SECTION_MARGIN: 'mb-8',
+  SECTION_PADDING: 'px-4',
+  CARD_PADDING: 'p-3',
+  CARD_GAP: 'p-3',
+  BORDER_WIDTH: 'border-8',
+  BORDER_RADIUS: 'rounded-2xl',
+  CONTENT_GAP: 'space-y-4',
+  HEADER_MARGIN: 'mb-3',
+  COMPONENT_GAP: 'gap-3',
+} as const;
+
+// --- STATIC DATA (2025) ---
 const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion", details: "Clinched his maiden World Title with 8 wins and 19 podiums, showing supreme consistency over Verstappen." },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active", details: "Won the most races (9) this season, but reliability issues and DNFs cost him the championship fight." },
-  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 7, points: 300, status: "Active", details: "A breakout superstar season with 7 wins, securing the Constructors' Championship for McLaren." },
-  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 3, points: 250, status: "Active", details: "Led the Mercedes charge with 3 wins, establishing himself as the team leader over rookie Antonelli." },
-  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 0, points: 200, status: "Active", details: "Dominated qualifying with poles but struggled with race pace and tire degradation against McLaren." },
-  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 0, points: 180, status: "Active", details: "Solid debut season in Red; consistent points finishes while adapting to the Ferrari car characteristics." },
-  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 150, status: "Rookie", details: "Sensational rookie performance with 3 podiums, proving he belongs in a top seat at just 19." },
-  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 100, status: "Active", details: "Overachieved in the Williams, consistently dragging the car into Q3 and top-6 finishes." },
-  { position: 9, driver: "Carlos Sainz", "team": "Williams", wins: 0, points: 80, status: "Active", details: "Brought veteran stability to Williams, forming a formidable midfield partnership with Albon." },
-  { position: 10, driver: "Fernando Alonso", "team": "Aston Martin", wins: 0, points: 50, status: "Active", details: "Defied age at 44, using unmatched racecraft to snatch points despite a difficult car." },
-  { position: 11, driver: "Nico Hülkenberg", "team": "Kick Sauber", wins: 0, points: 45, status: "Active", details: "Consistent midfield runner, extracting maximum value from the Audi-transitioning Sauber." },
-  { position: 12, driver: "Yuki Tsunoda", "team": "Red Bull", wins: 0, points: 40, status: "Active", details: "Promoted to the top Red Bull seat but struggled to match Verstappen's relentless pace." },
-  { position: 13, driver: "Isack Hadjar", "team": "Racing Bulls", wins: 0, points: 35, status: "Rookie", details: "Rookie highlight: Scored a shock podium in a chaotic wet race, showing flashes of brilliance." },
-  { position: 14, driver: "Oliver Bearman", "team": "Haas", wins: 0, points: 30, status: "Active", details: "Quiet but steady rookie season for Haas, minimizing errors and learning the tracks." },
-  { position: 15, driver: "Liam Lawson", "team": "Racing Bulls", wins: 0, points: 25, status: "Active", details: "Returned to full-time racing, matching his teammate closely in the midfield battle." },
-  { position: 16, driver: "Esteban Ocon", "team": "Haas", wins: 0, points: 20, status: "Active", details: "Brought aggression to Haas, occasionally clashing with rivals but securing vital team points." },
-  { position: 17, driver: "Lance Stroll", "team": "Aston Martin", wins: 0, points: 15, status: "Active", details: "Inconsistent season, occasionally flashing top-10 pace but fading in races." },
-  { position: 18, driver: "Pierre Gasly", "team": "Alpine", wins: 0, points: 10, status: "Active", details: "Plagued by Alpine's mechanical reliability issues, limiting his ability to score." },
-  { position: 19, driver: "Gabriel Bortoleto", "team": "Kick Sauber", wins: 0, points: 5, status: "Rookie", details: "Steep learning curve in F1, but showed raw qualifying speed in the second half." },
-  { position: 20, driver: "Franco Colapinto", "team": "Alpine", wins: 0, points: 0, status: "Active", details: "Struggled with the difficult handling of the Alpine in his first full season." }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion", details: "Clinched his maiden World Title with 8 wins and 19 podiums." },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active", details: "Won the most races (9), but reliability issues cost him the title." },
+  { position: 3, driver: "Oscar Piastri", team: "McLaren", wins: 7, points: 300, status: "Active", details: "Breakout season with 7 wins, securing Constructors' Title." },
+  { position: 4, driver: "George Russell", team: "Mercedes", wins: 3, points: 250, status: "Active", details: "Led Mercedes charge with 3 wins." },
+  { position: 5, driver: "Charles Leclerc", team: "Ferrari", wins: 0, points: 200, status: "Active", details: "Dominated qualifying but struggled with race pace." },
+  { position: 6, driver: "Lewis Hamilton", team: "Ferrari", wins: 0, points: 180, status: "Active", details: "Solid debut in Red; consistent points finishes." },
 ];
 
 interface RaceResult {
@@ -48,29 +48,20 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // 1. SMART ID PARSING (Fixes the "Australian GP" bug)
+  // 1. SMART ID PARSING
   const safeId = String(raceId || '');
-  
-  let year = '2024'; // Default
-  let round = '1';   // Default
+  let year = '2024'; 
+  let round = '1'; 
 
-  // 🔍 Find the year anywhere in the string (e.g. "australian-gp-2026" -> 2026)
   const yearMatch = safeId.match(/\b(202\d)\b/); 
-  if (yearMatch) {
-      year = yearMatch[1];
-  } else {
-      // Fallback: If no year found, try the first part of ID if it looks like a year
+  if (yearMatch) year = yearMatch[1];
+  else {
       const parts = safeId.split('-');
-      if (parts[0] && parts[0].length === 4 && !isNaN(Number(parts[0]))) {
-          year = parts[0];
-      }
+      if (parts[0] && parts[0].length === 4 && !isNaN(Number(parts[0]))) year = parts[0];
   }
 
-  // 🔍 Find round number if present
   const roundMatch = safeId.match(/round-(\d+)/i);
-  if (roundMatch) {
-      round = roundMatch[1];
-  }
+  if (roundMatch) round = roundMatch[1];
 
   // 2. Logic Modes
   const is2025 = safeId.includes('2025-summary') || year === '2025';
@@ -88,6 +79,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     const fetchResults = async () => {
       setLoading(true);
       try {
+        console.log(`🔄 Fetching results for Year: ${year}, Round: ${round}`);
         const url = `${API_BASE}/race_results?year=${year}&round=${round}`;
         const headers = { 
             "ngrok-skip-browser-warning": "true",
@@ -100,11 +92,13 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         if (res.ok) {
            rawData = await res.json();
         } else {
-           try {
-             const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
-             if (resFallback.ok) rawData = await resFallback.json();
-           } catch (err) { console.log("Fallback failed"); }
+           // Fallback path
+           console.log("⚠️ Primary fetch failed, trying fallback...");
+           const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
+           if (resFallback.ok) rawData = await resFallback.json();
         }
+
+        console.log("📊 Data Received:", rawData);
 
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
@@ -122,7 +116,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
             setFetchedResults(cleanData);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Fetch Error:", e); }
       setLoading(false);
     };
 
@@ -170,7 +164,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       className="fixed inset-0 z-[1000] overflow-y-auto pb-24 font-sans w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
-      {/* HEADER */}
+      {/* HEADER (Red Gradient - Matching Team Style) */}
       <div 
         className="sticky top-0 z-20 shadow-lg flex items-center gap-4 px-4 py-4"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)', color: 'white' }}
@@ -190,7 +184,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
       </div>
 
       {/* CONTENT */}
-      <div className="p-4 space-y-3">
+      <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP} mt-4`}>
         
         {/* --- 2026 VIEW --- */}
         {is2026 && (
@@ -213,7 +207,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         {loading && (
             <div className="flex flex-col items-center justify-center py-20">
                 <div className="animate-spin text-4xl mb-4 text-red-600">🏎️</div>
-                <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Fetching Data...</p>
+                <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Fetching Results...</p>
             </div>
         )}
 
@@ -221,7 +215,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         {displayList.map((result, index) => (
             <div 
                 key={index}
-                className={`p-3 mb-2 rounded-xl shadow-sm flex flex-col gap-2 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
+                className={`p-3 rounded-xl shadow-sm flex flex-col gap-2 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
                 style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
             >
                 {/* Top Row: Pos, Name, Points */}
@@ -266,14 +260,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 
                 {/* Badges */}
                 <div className="flex justify-end gap-2 pl-12">
-                     {result.status === 'Champion' && (
-                         <span className="flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">
-                            <Medal className="w-2 h-2" /> CHAMPION
-                         </span>
-                    )}
-                    {result.status === 'Rookie' && (
-                         <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded border border-purple-200">ROOKIE</span>
-                    )}
+                      {result.status === 'Champion' && (
+                          <span className="flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">
+                             <Medal className="w-2 h-2" /> CHAMPION
+                          </span>
+                     )}
+                     {result.status === 'Rookie' && (
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded border border-purple-200">ROOKIE</span>
+                     )}
                 </div>
 
             </div>
@@ -285,7 +279,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
                     <Flag className={`w-6 h-6 ${isDark ? 'text-neutral-600' : 'text-slate-400'}`} />
                 </div>
-                <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No results found</p>
+                <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No results available</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Check back later or try another round</p>
             </div>
         )}
 
