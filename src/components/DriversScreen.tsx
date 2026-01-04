@@ -9,7 +9,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle'; 
-import logo from '../styles/LOGO.png'; // 🟢 Team's Logo
+import logo from '../styles/logo.png'; // 🟢 Team's Logo
 
 // 🟢 CONFIG: Using your ngrok URL for functionality
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
