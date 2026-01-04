@@ -4,10 +4,9 @@ import { drivers, teams } from '../lib/data';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 
-// 🟢 CONFIG: Use your functional backend URL
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// Consistent spacing constants
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -21,16 +20,7 @@ const SPACING = {
 } as const;
 
 interface RatingData {
-  driver_name: string; // Backend always sends 'driver_name'
-  avg_rating: number;
-  total_votes: number;
-  latest_comments: { user: string; rating: number; text: string; date: string }[];
-}
-
-// Frontend specific interfaces
-interface DriverRating extends RatingData {}
-interface TeamRating {
-  team_name: string; // Mapped from driver_name for teams
+  driver_name: string;
   avg_rating: number;
   total_votes: number;
   latest_comments: { user: string; rating: number; text: string; date: string }[];
@@ -40,12 +30,10 @@ export function FanPulseWidget() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [ratings, setRatings] = useState<DriverRating[]>([]);
-  const [teamRatings, setTeamRatings] = useState<TeamRating[]>([]);
+  const [ratings, setRatings] = useState<RatingData[]>([]);     // Drivers
+  const [teamRatings, setTeamRatings] = useState<RatingData[]>([]); // Teams
   
-  const [selectedDriver, setSelectedDriver] = useState<DriverRating | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<TeamRating | null>(null);
-  
+  const [selectedEntity, setSelectedEntity] = useState<string>(""); 
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [ratingType, setRatingType] = useState<'driver' | 'team'>('driver');
   
@@ -56,34 +44,23 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 UNIFIED FETCH: Gets all ratings and splits them
+  // 🟢 IMPROVED FETCH: No strict filtering (Shows exactly what backend has)
   const fetchData = async () => {
     try {
       const res = await fetch(`${API_BASE}/community/ratings`);
       if (res.ok) {
         const allData: RatingData[] = await res.json();
+        console.log("📊 Raw Ratings Data:", allData);
+
+        // Split data based on whether the name exists in our 'teams' list
+        // If it's a known team name, it goes to Team Ratings. Otherwise, Driver Ratings.
+        const knownTeamNames = allTeamsList.map(t => t.name);
         
-        // 1. Filter Drivers
-        // Check if the rating name exists in your 'drivers' data file
-        const driverData = allData.filter(d => 
-            allDriversList.some(ad => ad.name === d.driver_name)
-        );
-        setRatings(driverData);
+        const teamsData = allData.filter(d => knownTeamNames.includes(d.driver_name));
+        const driversData = allData.filter(d => !knownTeamNames.includes(d.driver_name));
 
-        // 2. Filter Teams
-        // Check if the rating name exists in your 'teams' data file
-        const teamDataRaw = allData.filter(d => 
-            allTeamsList.some(t => t.name === d.driver_name)
-        );
-
-        // Map to Team Interface
-        const teamData: TeamRating[] = teamDataRaw.map(d => ({
-            team_name: d.driver_name, // Backend calls everything 'driver_name'
-            avg_rating: d.avg_rating,
-            total_votes: d.total_votes,
-            latest_comments: d.latest_comments
-        }));
-        setTeamRatings(teamData);
+        setRatings(driversData);
+        setTeamRatings(teamsData);
       }
     } catch (e) {
       console.error("Failed to load ratings", e);
@@ -95,21 +72,15 @@ export function FanPulseWidget() {
   }, []);
 
   const handleSubmit = async () => {
-    // Validation
-    const entityName = ratingType === 'driver' 
-        ? selectedDriver?.driver_name 
-        : selectedTeam?.team_name;
-
-    if (!entityName) return;
+    if (!selectedEntity) return;
     
     try {
-      // 🟢 FIX: Always use /community/rate and always use 'driver_name' key
-      // Your backend expects { driver_name: "..." } even for teams
+      // Always send to /community/rate with 'driver_name' key
       await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          driver_name: entityName, 
+          driver_name: selectedEntity, 
           rating: userRating,
           comment: userComment || "No comment",
           username: userName || "Anonymous Fan"
@@ -120,25 +91,12 @@ export function FanPulseWidget() {
       setUserComment("");
       setUserName("");
       
-      // 🟢 REFRESH DATA IMMEDIATELY
-      await fetchData();
+      // Refresh Data Immediately
+      setTimeout(fetchData, 500);
       
     } catch (e) {
       alert("Failed to submit rating");
     }
-  };
-
-  // Helper to init selection if data doesn't exist yet
-  const handleDriverChange = (driverName: string) => {
-    const existing = ratings.find(r => r.driver_name === driverName);
-    if (existing) setSelectedDriver(existing);
-    else setSelectedDriver({ driver_name: driverName, avg_rating: 0, total_votes: 0, latest_comments: [] });
-  };
-
-  const handleTeamChange = (teamName: string) => {
-    const existing = teamRatings.find(r => r.team_name === teamName);
-    if (existing) setSelectedTeam(existing);
-    else setSelectedTeam({ team_name: teamName, avg_rating: 0, total_votes: 0, latest_comments: [] });
   };
 
   return (
@@ -181,18 +139,13 @@ export function FanPulseWidget() {
                     <div className={SPACING.CONTENT_GAP}>
                       {ratings.length === 0 ? (
                         <div className="text-center text-gray-500 dark:text-gray-400 py-4 text-sm font-medium">
-                          No driver ratings yet. Be the first!
+                          No driver ratings yet.
                         </div>
                       ) : (
                         ratings.slice(0, 3).map((driver, idx) => (
                           <div 
                             key={driver.driver_name}
-                            onClick={() => { 
-                              setSelectedDriver(driver); 
-                              setRatingType('driver');
-                              setIsRatingOpen(true); 
-                            }}
-                            className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-all p-3 rounded-xl flex items-center justify-between cursor-pointer group active:scale-[0.98]"
+                            className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all p-3 rounded-xl flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
                               <span className={`font-black text-lg w-6 text-center ${idx === 0 ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-300'}`}>
@@ -229,7 +182,7 @@ export function FanPulseWidget() {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { 
-                        if (!selectedDriver) handleDriverChange(allDriversList[0].name);
+                        setSelectedEntity(allDriversList[0].name);
                         setRatingType('driver');
                         setIsRatingOpen(true);
                       }}
@@ -252,18 +205,13 @@ export function FanPulseWidget() {
                     <div className={SPACING.CONTENT_GAP}>
                       {teamRatings.length === 0 ? (
                         <div className="text-center text-gray-500 dark:text-gray-400 py-4 text-sm font-medium">
-                          No team ratings yet. Be the first!
+                          No team ratings yet.
                         </div>
                       ) : (
                         teamRatings.slice(0, 3).map((team, idx) => (
                           <div 
-                            key={team.team_name}
-                            onClick={() => { 
-                              setSelectedTeam(team); 
-                              setRatingType('team');
-                              setIsRatingOpen(true); 
-                            }}
-                            className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 transition-all p-3 rounded-xl flex items-center justify-between cursor-pointer group active:scale-[0.98] mt-4"
+                            key={team.driver_name}
+                            className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-all p-3 rounded-xl flex items-center justify-between mt-4"
                           >
                             <div className="flex items-center gap-3">
                               <span className={`font-black text-lg w-6 text-center ${idx === 0 ? 'text-yellow-500' : 'text-gray-400 dark:text-white'}`}>
@@ -271,7 +219,7 @@ export function FanPulseWidget() {
                               </span>
                               <div>
                                 <div className="text-neutral-900 dark:text-white font-black text-sm uppercase tracking-wide">
-                                  {team.team_name}
+                                  {team.driver_name}
                                 </div>
                                 <div className="text-gray-500 dark:text-gray-400 text-[10px] font-bold flex items-center gap-1">
                                   <User className="w-3 h-3" /> {team.total_votes} votes
@@ -300,7 +248,7 @@ export function FanPulseWidget() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { 
-                      if (!selectedTeam) handleTeamChange(allTeamsList[0].name);
+                      setSelectedEntity(allTeamsList[0].name);
                       setRatingType('team');
                       setIsRatingOpen(true);
                     }}
@@ -335,18 +283,11 @@ export function FanPulseWidget() {
                 <h3 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-1">
                   Rate {ratingType === 'driver' ? 'Driver' : 'Team'}
                 </h3>
-                <p className="text-gray-500 dark:text-neutral-400 text-xs font-bold mb-6">
-                  How did {
-                    ratingType === 'driver' 
-                      ? selectedDriver?.driver_name 
-                      : selectedTeam?.team_name
-                  } perform?
-                </p>
-
+                
                 {/* Type Toggle */}
                 <div className="flex bg-gray-100 dark:bg-neutral-800 rounded-xl p-1 mb-6">
                   <button
-                    onClick={() => setRatingType('driver')}
+                    onClick={() => { setRatingType('driver'); setSelectedEntity(allDriversList[0].name); }}
                     className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
                       ratingType === 'driver'
                         ? 'bg-red-600 text-white'
@@ -356,7 +297,7 @@ export function FanPulseWidget() {
                     Driver
                   </button>
                   <button
-                    onClick={() => setRatingType('team')}
+                    onClick={() => { setRatingType('team'); setSelectedEntity(allTeamsList[0].name); }}
                     className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
                       ratingType === 'team'
                         ? 'bg-purple-600 text-white'
@@ -370,18 +311,8 @@ export function FanPulseWidget() {
                 {/* Dropdown */}
                 <div className="relative mb-6">
                   <select 
-                    value={
-                      ratingType === 'driver' 
-                        ? selectedDriver?.driver_name 
-                        : selectedTeam?.team_name
-                    }
-                    onChange={(e) => {
-                      if (ratingType === 'driver') {
-                        handleDriverChange(e.target.value);
-                      } else {
-                        handleTeamChange(e.target.value);
-                      }
-                    }}
+                    value={selectedEntity}
+                    onChange={(e) => setSelectedEntity(e.target.value)}
                     className={`w-full bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl px-4 py-3 text-neutral-900 dark:text-white font-bold appearance-none focus:outline-none focus:ring-2 ${
                       ratingType === 'driver' ? 'focus:ring-red-500' : 'focus:ring-purple-500'
                     }`}
