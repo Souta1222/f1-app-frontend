@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // 🟢 Added useCallback
 import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
 // @ts-ignore
-import { useTheme } from './../components/ThemeContext.tsx'; // 🟢 Team's Import Path
+import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle';
-import logo from '../styles/logo.png'; // 🟢 Team's Logo
+import logo from '../styles/LOGO.png'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
 
 interface HomeScreenProps {
   onNavigateToRace: (raceId: string) => void;
-  onPredictRace: (raceId: string) => void; // 🟢 KEPT: Needed for Prediction Screen
+  onPredictRace: (raceId: string) => void;
 }
 
 interface NewsArticle {
@@ -24,7 +24,6 @@ interface NewsArticle {
   Team?: string; 
 }
 
-// 🟢 Team's Consistent Spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -44,6 +43,9 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
   
+  // 🟢 NEW: Trigger state to force re-fetching
+  const [refreshTrigger, setRefreshTrigger] = useState(0); 
+
   // --- COUNTDOWN LOGIC ---
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
@@ -52,7 +54,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     
     const updateCountdown = () => {
       const now = new Date();
-      // Safety check for date format
       const raceDateStr = nextRace.date + (nextRace.time ? ' ' + nextRace.time : 'T12:00:00');
       const raceDate = new Date(raceDateStr);
       const diff = raceDate.getTime() - now.getTime();
@@ -62,7 +63,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
         setCountdown({ days, hours, minutes, seconds });
       }
     };
@@ -72,11 +72,29 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     return () => clearInterval(interval);
   }, [nextRace]);
 
-  // --- FETCH NEWS ---
+  // --- 🟢 NEW: LISTENER FOR CHATBOT UPDATES ---
+  useEffect(() => {
+    // This function runs when ChatWidget says "newsUpdated"
+    const handleNewsUpdateSignal = () => {
+        console.log("📣 HomeScreen: Received update signal! Refreshing news...");
+        setRefreshTrigger(prev => prev + 1); // This triggers the fetch effect below
+    };
+
+    window.addEventListener('newsUpdated', handleNewsUpdateSignal);
+
+    // Cleanup listener when screen unmounts
+    return () => {
+        window.removeEventListener('newsUpdated', handleNewsUpdateSignal);
+    };
+  }, []);
+
+  // --- FETCH NEWS (Depends on refreshTrigger) ---
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await fetch(`${API_BASE}/news/latest`, {
+        console.log("🔄 Fetching latest news...");
+        // Add timestamp to prevent caching
+        const res = await fetch(`${API_BASE}/news/latest?t=${Date.now()}`, {
              headers: { "ngrok-skip-browser-warning": "true" }
         });
         if (res.ok) {
@@ -88,7 +106,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
       }
     };
     fetchNews();
-  }, []);
+  }, [refreshTrigger]); // 👈 Runs whenever refreshTrigger changes
   
   if (!nextRace) return null;
 
@@ -152,7 +170,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
       >
         <div>
-            {/* 🟢 Team's Logo Integration */}
             <div className="flex items-center gap-2 mt-6">
                 <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
             </div>
@@ -163,7 +180,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         </div>
       </div>
 
-      {/* 🟢 Team's "Race Week Hub" Badge */}
       <div className="mt-6 mb-8 px-6">
         <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
           <h1 className="text-[10px] uppercase tracking-widest opacity-80">
@@ -236,7 +252,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     ))}
                   </div>
 
-                  {/* 🟢 NEW: PREDICT BUTTON (Restored from my fix) */}
+                  {/* PREDICT BUTTON */}
                   <Button 
                     onClick={() => onPredictRace(nextRace.id)}
                     className={`w-full font-bold uppercase tracking-widest h-12 rounded-xl shadow-lg border-0 transition-all mt-4 ${isDark ? 'bg-red-600 text-white hover:bg-red-700 border border-red-500' : 'bg-white text-slate-900 hover:bg-gray-100'}`}
@@ -260,7 +276,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     <h2 className="font-bold text-xl tracking-tight">Fan Pulse</h2>
                 </div>
                 </div>
-                {/* 🟢 Team's Added Text */}
                 <p className={`text-sm mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
                   Real-time sentiment from F1 fans worldwide
                 </p>
