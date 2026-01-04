@@ -6,7 +6,6 @@ import { FanPulseWidget } from './FanPulseWidget';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; // Import Hook
 import { ThemeToggle } from './ThemeToggle';         // Import Button
-import logo from '../styles/LOGO.png';
 
 
 
@@ -203,11 +202,13 @@ export function HomeScreen({ onNavigateToRace }: HomeScreenProps) {
         <div>
             <p className="text-red-200 text-[10px] font-bold uppercase tracking-widest mb-1 opacity-80">Race Week Hub</p>
             <div className="flex items-center gap-2">
-                <img 
-                src={logo} 
-                alt="F1INSIDER" 
-                className="h-8 w-auto"
-                />
+            <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center transform -skew-x-12">
+            <span className="text-red-600 font-black text-xl not-italic skew-x-12">F1</span>
+        </div>
+        <span className="text-white font-black text-xl italic tracking-tighter">
+            INSIDER
+        </span>
             </div>
         </div>
 
