@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
-// 🟢 SAFE MODE: Config defined locally
+// 🟢 SAFE MODE: Local Config
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 // --- STATIC DATA ---
 const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, status: "Active" },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, status: "Active" },
-  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 9, status: "Active" },
-  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 5, status: "Active" },
-  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, status: "Active" },
-  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, status: "Active" },
-  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, status: "Rookie" },
-  { position: 8, driver: "Alex Albon", "team": "Williams", "wins": 0, status: "Active" },
-  { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, "status": "Active" }
+  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 11, points: 0, status: "Active" },
+  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 71, points: 0, "status": "Active" },
+  { position: 3, driver: "Oscar Piastri", "team": "McLaren", wins: 9, points: 0, "status": "Active" },
+  { position: 4, driver: "George Russell", "team": "Mercedes", wins: 5, points: 0, "status": "Active" },
+  { position: 5, driver: "Charles Leclerc", "team": "Ferrari", wins: 8, points: 0, "status": "Active" },
+  { position: 6, driver: "Lewis Hamilton", "team": "Ferrari", wins: 105, points: 0, "status": "Active" },
+  { position: 7, driver: "Kimi Antonelli", "team": "Mercedes", wins: 0, points: 0, "status": "Rookie" },
+  { position: 8, driver: "Alex Albon", "team": "Williams", wins: 0, points: 0, "status": "Active" },
+  { position: 9, driver: "Carlos Sainz", "team": "Williams", "wins": 4, points: 0, "status": "Active" }
 ];
 
 interface RaceResult {
@@ -31,46 +31,25 @@ interface RaceDetailsScreenProps {
 }
 
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
-  const [results, setResults] = useState<RaceResult[]>([]);
+  // 1. Analyze ID immediately (Computed State)
+  const safeId = String(raceId || '');
+  const parts = safeId.split('-');
+  const year = parts[0] || '2024';
+  const round = parts[2] || '1';
+
+  // 2. Determine Mode
+  const is2025Summary = safeId === '2025-summary';
+  const is2026Upcoming = year === '2026';
+  
+  // State for fetched results only
+  const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [raceInfo, setRaceInfo] = useState({ year: '2024', round: '1' });
-  const [isUpcoming, setIsUpcoming] = useState(false);
 
+  // 3. Effect: Only fetch if NOT 2025/2026
   useEffect(() => {
-    // 1. Safety Check
-    const safeId = String(raceId || '');
-    if (!safeId) return;
+    if (is2025Summary || is2026Upcoming) return; // 🛑 Skip fetch for static pages
 
-    // 2. Handle 2025 Summary
-    if (safeId === '2025-summary') {
-        setRaceInfo({ year: '2025', round: 'Season Standings' });
-        setResults(RESULTS_2025);
-        setLoading(false);
-        setIsUpcoming(false);
-        return;
-    }
-
-    // 3. Parse Year & Round
-    const parts = safeId.split('-');
-    let year = '2024';
-    let round = '1';
-
-    if (parts.length >= 3) {
-        year = parts[0];
-        round = parts[2];
-        setRaceInfo({ year, round });
-    }
-
-    // 4. Handle 2026 (Upcoming)
-    if (year === '2026') {
-        setIsUpcoming(true);
-        setResults([]);
-        setLoading(false);
-        return; 
-    }
-    
-    // 5. Fetch Data
-    setIsUpcoming(false);
+    console.log("Fetching for:", year, round); // 🔍 Debug Log
     
     const fetchResults = async () => {
       setLoading(true);
@@ -94,7 +73,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
            } catch (err) { console.log("Fallback failed"); }
         }
 
-        // 🛡️ Data Sanitization
+        // Sanitization
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -109,22 +88,29 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     });
                 }
             }
-            setResults(cleanData);
+            setFetchedResults(cleanData);
         } else {
-            setResults([]);
+            setFetchedResults([]);
         }
 
       } catch (e) {
-        console.error("Error fetching results", e);
-        setResults([]);
+        console.error("Fetch error:", e);
+        setFetchedResults([]);
       }
       setLoading(false);
     };
 
     fetchResults();
-  }, [raceId]);
+  }, [safeId, year, round, is2025Summary, is2026Upcoming]);
 
-  // Helper for Team Colors
+  // 4. Determine Data to Show
+  const activeResults = useMemo(() => {
+    if (is2025Summary) return RESULTS_2025;
+    if (is2026Upcoming) return [];
+    return fetchedResults;
+  }, [is2025Summary, is2026Upcoming, fetchedResults]);
+
+  // Helper
   const getTeamColor = (teamName: string) => {
     if (!teamName) return '#94a3b8';
     const t = String(teamName).toLowerCase();
@@ -160,18 +146,19 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         </button>
         <div>
           <h1 className="font-black text-xl leading-none text-white uppercase tracking-tight">
-            {isUpcoming ? 'Race Preview' : 'Race Results'}
+            {is2026Upcoming ? 'Race Preview' : 'Race Results'}
           </h1>
           <span className="text-xs text-red-100/80 font-bold uppercase tracking-widest mt-1 inline-block">
-            {raceInfo.year} • {raceInfo.round}
+            {is2025Summary ? '2025 Season' : `${year} • Round ${round}`}
           </span>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content Area */}
       <div className="p-4 space-y-3">
-        {isUpcoming ? (
-            // 🟢 2026 View
+        
+        {/* CASE 1: 2026 UPCOMING VIEW */}
+        {is2026Upcoming && (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm text-center px-6">
                 <div className="text-4xl mb-4">📅</div>
                 <h2 className="text-xl font-black text-neutral-900 mb-2">Upcoming Event</h2>
@@ -183,60 +170,68 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     See Circuit Map
                 </div>
             </div>
-        ) : loading ? (
+        )}
+
+        {/* CASE 2: LOADING */}
+        {!is2026Upcoming && loading && (
           <div className="flex flex-col items-center justify-center py-20">
              <div className="animate-spin text-4xl mb-4 text-red-700">🏎️</div>
              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Fetching Data...</p>
           </div>
-        ) : (!results || results.length === 0) ? (
-          <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
-             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🏁</span>
-            </div>
-            <p className="text-neutral-900 font-bold">No results found</p>
-          </div>
-        ) : (
-          results.map((result, index) => (
-            <div 
-              key={index}
-              className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all"
-              style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
-            >
-              {/* Position Badge */}
-              <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-sm shadow-inner
-                ${result.position === 1 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
-                  result.position === 2 ? 'bg-slate-100 text-slate-600 border border-slate-200' :
-                  result.position === 3 ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-slate-50 text-slate-400'}
-              `}>
-                {result.position === 1 ? '🏆' : result.position}
-              </div>
+        )}
 
-              {/* Driver Info */}
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-neutral-900 truncate text-sm">{result.driver}</div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
-              </div>
-
-              {/* Stats */}
-              <div className="text-right">
-                {result.wins !== undefined ? (
-                    <div className="font-mono font-bold text-sm text-blue-600">
-                        {result.wins || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span>
+        {/* CASE 3: RESULTS LIST (2025 or FETCHED) */}
+        {!is2026Upcoming && !loading && (
+            <>
+                {(!activeResults || activeResults.length === 0) ? (
+                    <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                        <div className="text-3xl mb-2">🏁</div>
+                        <p className="text-neutral-900 font-bold">No results found</p>
                     </div>
                 ) : (
-                    <div className="font-mono font-bold text-sm text-green-600">
-                        +{result.points || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span>
-                    </div>
+                    activeResults.map((result, index) => (
+                        <div 
+                        key={index}
+                        className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-xl p-3 flex items-center gap-4 transition-all"
+                        style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
+                        >
+                            {/* Position */}
+                            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-sm shadow-inner
+                                ${result.position === 1 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
+                                result.position === 2 ? 'bg-slate-100 text-slate-600 border border-slate-200' :
+                                result.position === 3 ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-slate-50 text-slate-400'}
+                            `}>
+                                {result.position === 1 ? '🏆' : result.position}
+                            </div>
+
+                            {/* Driver */}
+                            <div className="flex-1 min-w-0">
+                                <div className="font-bold text-neutral-900 truncate text-sm">{result.driver}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{result.team}</div>
+                            </div>
+
+                            {/* Stats */}
+                            <div className="text-right">
+                                {result.wins !== undefined ? (
+                                    <div className="font-mono font-bold text-sm text-blue-600">
+                                        {result.wins || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">WINS</span>
+                                    </div>
+                                ) : (
+                                    <div className="font-mono font-bold text-sm text-green-600">
+                                        +{result.points || 0} <span className="text-[9px] text-gray-400 font-sans uppercase">PTS</span>
+                                    </div>
+                                )}
+                                
+                                <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1">
+                                        {String(result.status)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
                 )}
-                
-                <div className="text-[10px] flex items-center justify-end gap-1 mt-0.5">
-                    <span className="text-slate-500 font-medium flex items-center gap-1">
-                        {String(result.status)}
-                    </span>
-                </div>
-              </div>
-            </div>
-          ))
+            </>
         )}
       </div>
     </div>
