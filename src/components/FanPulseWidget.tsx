@@ -44,17 +44,23 @@ export function FanPulseWidget() {
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 UNIFIED REAL DATA FETCH
+  // 🟢 FIXED FETCH: Adds Header to bypass Ngrok warning page
   const fetchData = async () => {
     try {
-      // Add timestamp to prevent caching
-      const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`);
+      const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`, {
+        method: 'GET',
+        headers: {
+            'ngrok-skip-browser-warning': 'true', // 👈 THIS IS KEY!
+            'Content-Type': 'application/json'
+        }
+      });
+
       if (res.ok) {
         const allData: RatingData[] = await res.json();
-        
-        // Normalize names for comparison
+        console.log("📊 Widget Data Received:", allData);
+
+        // Filter Logic
         const knownTeamNames = allTeamsList.map(t => t.name.toLowerCase());
-        
         const teamsData: RatingData[] = [];
         const driversData: RatingData[] = [];
 
@@ -66,12 +72,14 @@ export function FanPulseWidget() {
             }
         });
 
-        // Sort by popularity (votes)
+        // Sort by votes
         driversData.sort((a, b) => b.total_votes - a.total_votes);
         teamsData.sort((a, b) => b.total_votes - a.total_votes);
 
         setRatings(driversData);
         setTeamRatings(teamsData);
+      } else {
+        console.error("Fetch failed:", res.status);
       }
     } catch (e) {
       console.error("Failed to load ratings", e);
@@ -88,7 +96,10 @@ export function FanPulseWidget() {
     try {
       await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true' // 👈 Added here too for safety
+        },
         body: JSON.stringify({
           driver_name: selectedEntity, 
           rating: userRating,
@@ -256,7 +267,7 @@ export function FanPulseWidget() {
                     </div>
                   </div>
 
-                {/* 🟢 Rate Team Button (NOW RED) */}
+                {/* 🟢 Rate Team Button (Fixed: RED Color) */}
                 <div className="flex gap-2">
                   <button 
                     onClick={() => { 
