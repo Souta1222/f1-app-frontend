@@ -154,11 +154,14 @@ export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChan
     return 'border-slate-200';
   };
 
-  // 🟢 FIX: Explicit Background Colors for Select Trigger
-  // Added "bg-white" (light) and "bg-neutral-900" (dark) to prevent transparency
+  // 🟢 FIX: Tailwind classes for background
   const selectTriggerClass = isDark 
     ? "bg-neutral-900 text-white border-neutral-700" 
     : "bg-white text-neutral-900 border-gray-200";
+
+  // 🟢 FIX: Define explicit background colors for the STYLE prop
+  // This guarantees opacity even if CSS/Tailwind fails
+  const solidBackground = isDark ? '#171717' : '#ffffff';
 
   return (
     <div 
@@ -191,6 +194,8 @@ export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChan
                   <Select value={selectedSeason} onValueChange={onSeasonChange}>
                     <SelectTrigger 
                       className={`w-full rounded-xl shadow-md h-12 font-bold uppercase tracking-wide border-0 ring-0 focus:ring-0 ${selectTriggerClass}`}
+                      // 🟢 FORCE SOLID BACKGROUND ON TRIGGER
+                      style={{ backgroundColor: solidBackground }}
                     >
                       <div className="flex items-center gap-2">
                         <Calendar className={`w-4 h-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
@@ -198,9 +203,10 @@ export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChan
                       </div>
                     </SelectTrigger>
                     
-                    {/* 🟢 FIX: Explicit Background Colors for Content */}
                     <SelectContent 
                       className={`rounded-xl shadow-xl z-[100] border ${isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-gray-100 text-neutral-900'}`}
+                      // 🟢 FORCE SOLID BACKGROUND ON DROPDOWN LIST (THE FIX)
+                      style={{ backgroundColor: solidBackground, opacity: 1 }}
                     >
                       <SelectItem value="2026" className="font-bold cursor-pointer hover:bg-red-50 dark:hover:bg-neutral-800">2026 Season (Upcoming)</SelectItem>
                       <SelectItem value="2025" className="font-bold cursor-pointer hover:bg-red-50 dark:hover:bg-neutral-800">2025 Season (Summary)</SelectItem>
