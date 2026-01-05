@@ -250,24 +250,24 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
                     </h2>
                     
-                    <div className="flex items-end justify-center gap-3 h-60 max-w-sm mx-auto">
-                        {/* P2 (Rank 2) - Left */}
+                    <div className="flex items-end justify-center gap-3 h-64 max-w-sm mx-auto">
+                        {/* P2 (Rank 2) - Left - MEDIUM HEIGHT */}
                         {podium[1] && (
                             <div className="flex flex-col items-center w-1/3">
                                 <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driver} />
-                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-28 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-32 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                     <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
                                     <div className="mt-2 font-black text-2xl opacity-30">2</div>
                                     <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[1].driver.split(' ').pop()}</div>
                                 </div>
                             </div>
                         )}
-                        {/* P1 (Rank 1) - Center */}
+                        {/* P1 (Rank 1) - Center - TALLEST */}
                         {podium[0] && (
                             <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
                                 <Crown className="w-6 h-6 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                                 <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driver} />
-                                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-40 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
+                                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-48 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
                                     <div className="mt-3 font-black text-4xl">1</div>
                                     <div className="text-xs font-black uppercase text-center leading-tight">{podium[0].driver.split(' ').pop()}</div>
                                     <div className="mt-1 px-2 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">
@@ -276,7 +276,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                 </div>
                             </div>
                         )}
-                        {/* P3 (Rank 3) - Right */}
+                        {/* P3 (Rank 3) - Right - SHORTEST */}
                         {podium[2] && (
                             <div className="flex flex-col items-center w-1/3">
                                 <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driver} />
