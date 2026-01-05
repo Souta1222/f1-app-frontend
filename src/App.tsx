@@ -4,7 +4,7 @@ import { HomeScreen } from './components/HomeScreen';
 import { RaceSelectionScreen } from './components/RaceSelectionScreen';
 import { DriversScreen } from './components/DriversScreen';
 import { RaceDetailsScreen } from './components/RaceDetailsScreen';
-import { PredictionResultsScreen } from './components/PredictionResultsScreen'; // 🟢 Import this
+import { PredictionResultsScreen } from './components/PredictionResultsScreen'; 
 import { ChatWidget } from './components/ChatWidget';
 import { ThemeProvider } from './components/ThemeContext'; 
 
@@ -13,23 +13,30 @@ type Screen = 'home' | 'races' | 'drivers';
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
-  const [isPredictionMode, setIsPredictionMode] = useState(false); // 🟢 NEW STATE
+  const [isPredictionMode, setIsPredictionMode] = useState(false); 
+  
+  // 🟢 NEW: Lifted State for Season (Defaults to 2024)
+  const [globalSelectedSeason, setGlobalSelectedSeason] = useState('2024');
 
   const handleNavigate = (screen: Screen) => {
     setCurrentScreen(screen);
+    // If navigating to 'races', keep the season state intact
+    // Only reset race selection
     if (screen !== 'races') {
       setSelectedRaceId(null);
       setIsPredictionMode(false);
+    } else {
+        // If clicking "Races" tab while viewing a race details, go back to list
+        setSelectedRaceId(null);
     }
   };
 
   const handleRaceSelect = (raceId: string) => {
     console.log("Navigating to Results:", raceId);
     setSelectedRaceId(raceId);
-    setIsPredictionMode(false); // Default to Results
+    setIsPredictionMode(false); 
   };
 
-  // 🟢 NEW HANDLER for "View AI Prediction" button
   const handlePredictRace = (raceId: string) => {
     console.log("Navigating to Prediction:", raceId);
     setSelectedRaceId(raceId);
@@ -38,7 +45,6 @@ export default function App() {
 
   const renderScreen = () => {
     if (selectedRaceId) {
-      // 🟢 ROUTING LOGIC
       if (isPredictionMode) {
         return (
           <PredictionResultsScreen 
@@ -63,10 +69,15 @@ export default function App() {
       case 'home': 
         return <HomeScreen 
           onNavigateToRace={handleRaceSelect} 
-          onPredictRace={handlePredictRace} // 👈 Pass this to HomeScreen
+          onPredictRace={handlePredictRace} 
         />;
       case 'races': 
-        return <RaceSelectionScreen onRaceSelect={handleRaceSelect} />;
+        return <RaceSelectionScreen 
+            onRaceSelect={handleRaceSelect} 
+            // 🟢 Pass down state and setter
+            selectedSeason={globalSelectedSeason}
+            onSeasonChange={setGlobalSelectedSeason}
+        />;
       case 'drivers': 
         return <DriversScreen />;
       default: 

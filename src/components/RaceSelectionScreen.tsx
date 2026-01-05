@@ -10,9 +10,9 @@ import {
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle';
-import logo from '../styles/logo.png'; // 🟢 Team's Logo
+import logo from '../styles/logo.png'; 
 
-// 🟢 CONFIG: Use your functional backend
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 // --- STATIC DATA: 2026 SCHEDULE ---
@@ -55,9 +55,11 @@ interface Race {
 
 interface RaceSelectionScreenProps {
   onRaceSelect: (raceId: string) => void;
+  // 🟢 NEW PROPS: Receive state from parent
+  selectedSeason: string;
+  onSeasonChange: (season: string) => void;
 }
 
-// Consistent spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -70,23 +72,22 @@ const SPACING = {
   COMPONENT_GAP: 'gap-3',
 } as const;
 
-export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) {
+export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChange }: RaceSelectionScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [selectedSeason, setSelectedSeason] = useState('2024'); 
   const [races, setRaces] = useState<Race[]>([]);
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     const fetchRaces = async () => {
-      // 🟢 2026: Use Static Schedule (Frontend only)
+      // 2026: Use Static Schedule
       if (selectedSeason === '2026') {
         setRaces(SCHEDULE_2026 as Race[]);
         return;
       }
 
-      // 🟢 2025: Show Season Summary Link
+      // 2025: Show Season Summary Link
       if (selectedSeason === '2025') {
         setRaces([{
            id: '2025-summary',
@@ -100,7 +101,7 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
         return;
       }
 
-      // 🟢 2023/2024: Fetch from Python Backend
+      // 2023/2024: Fetch from Python Backend
       setLoading(true);
       try {
         const url = `${API_BASE}/races/${selectedSeason}`;
@@ -133,7 +134,7 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // --- STYLES ---
+  // Styles
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ee1919ff' } 
     : { 
@@ -143,27 +144,21 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
         color: '#1e293b' 
       };
 
-  const getBorderColor = (section: 'hero' | 'season' | 'race' | 'card') => {
+  const getBorderColor = (section: string) => {
     if (isDark) {
-      switch(section) {
-        case 'season': return 'border-blue-900/40';
-        case 'race': return 'border-green-900/40';
-        case 'card': return 'border-neutral-800';
-        default: return 'border-neutral-800';
-      }
-    } else {
-      switch(section) {
-        case 'season': return 'border-blue-200';
-        case 'race': return 'border-green-200';
-        case 'card': return 'border-slate-200';
-        default: return 'border-slate-200';
-      }
+      if (section === 'season') return 'border-blue-900/40';
+      if (section === 'race') return 'border-green-900/40';
+      return 'border-neutral-800';
     }
+    if (section === 'season') return 'border-blue-200';
+    if (section === 'race') return 'border-green-200';
+    return 'border-slate-200';
   };
 
-  const selectStyle = isDark 
-    ? { backgroundColor: '#262626', color: '#ffffff', borderColor: '#404040' }
-    : { backgroundColor: 'white', color: '#1e293b', borderColor: '#e2e8f0' };
+  // 🟢 FIX: Explicit Background Colors for Select Trigger
+  const selectTriggerClass = isDark 
+    ? "bg-neutral-900 text-white border-neutral-700" 
+    : "bg-white text-neutral-900 border-gray-200";
 
   return (
     <div 
@@ -171,7 +166,7 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
       style={containerStyle}
     >
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <div 
         className="sticky top-0 z-50 shadow-2xl"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
@@ -179,26 +174,24 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
         <div className={`${SPACING.SECTION_PADDING} py-6`}>
           <div className="flex justify-between items-end mb-4">
             <div>
-              {/* Logo Integration */}
               <div className="flex items-center gap-2">
                 <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
               </div>
             </div>
-            
             <div className="flex items-center gap-3">
               <ThemeToggle />
             </div>
           </div>
           
-          {/* Season Selector Card */}
+          {/* Season Selector */}
           <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('season')}`}>
             <div className={SPACING.CARD_GAP}>
               <div className={`${SPACING.BORDER_RADIUS} ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
                 <div className={SPACING.CARD_PADDING}>
-                  <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                  {/* 🟢 Using Props for Value/Change */}
+                  <Select value={selectedSeason} onValueChange={onSeasonChange}>
                     <SelectTrigger 
-                      className={`w-full rounded-xl shadow-md h-12 font-bold uppercase tracking-wide border-0 ring-0 focus:ring-0 ${isDark ? 'text-white' : 'text-neutral-900'}`}
-                      style={selectStyle}
+                      className={`w-full rounded-xl shadow-md h-12 font-bold uppercase tracking-wide border-0 ring-0 focus:ring-0 ${selectTriggerClass}`}
                     >
                       <div className="flex items-center gap-2">
                         <Calendar className={`w-4 h-4 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
@@ -206,8 +199,9 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
                       </div>
                     </SelectTrigger>
                     
+                    {/* 🟢 FIX: Explicit Background Colors for Content */}
                     <SelectContent 
-                      className={`rounded-xl shadow-xl z-[100] border ${isDark ? 'border-neutral-700 bg-neutral-900 text-white' : 'border-gray-100 bg-white text-neutral-900'}`}
+                      className={`rounded-xl shadow-xl z-[100] border ${isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-gray-100 text-neutral-900'}`}
                     >
                       <SelectItem value="2026" className="font-bold cursor-pointer hover:bg-red-50 dark:hover:bg-neutral-800">2026 Season (Upcoming)</SelectItem>
                       <SelectItem value="2025" className="font-bold cursor-pointer hover:bg-red-50 dark:hover:bg-neutral-800">2025 Season (Summary)</SelectItem>
@@ -234,7 +228,6 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
       {/* Main Content */}
       <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP}`}>
         
-        {/* --- RACE LIST SECTION --- */}
         <section className={SPACING.SECTION_MARGIN}>
           <div className={`${SPACING.HEADER_MARGIN} ${SPACING.SECTION_PADDING}`}>
             <div className={`flex items-center ${SPACING.COMPONENT_GAP} ${isDark ? 'text-white' : 'text-slate-800'}`}>
@@ -249,11 +242,10 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
               </div>
             </div>
             <p className={`text-sm mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-              Select a race to view AI predictions and results
+              Select a race to view {selectedSeason === '2026' ? 'AI predictions' : 'results'}
             </p>
           </div>
 
-          {/* Race List Container */}
           {loading ? (
             <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('card')}`}>
               <div className={SPACING.CARD_GAP}>
@@ -290,7 +282,6 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
                         ${isDark ? 'bg-neutral-900 border-neutral-700 hover:border-neutral-600' : 'bg-white border-slate-100 hover:border-blue-100 hover:shadow-lg'}
                       `}
                     >
-                      {/* Flag */}
                       <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-3xl shadow-inner border ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-gray-50 border-gray-100'}`}>
                         {race.flag}
                       </div>
@@ -320,7 +311,6 @@ export function RaceSelectionScreen({ onRaceSelect }: RaceSelectionScreenProps) 
                         </div>
                       </div>
                       
-                      {/* Date & Arrow */}
                       <div className="flex flex-col items-end gap-2">
                         <span className={`text-xs font-bold whitespace-nowrap px-2 py-1 rounded-md ${isDark ? 'text-white bg-neutral-800' : 'text-gray-900 bg-gray-100'}`}>
                           {formatDate(race.date)}
