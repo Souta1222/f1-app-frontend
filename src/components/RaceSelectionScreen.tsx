@@ -55,7 +55,6 @@ interface Race {
 
 interface RaceSelectionScreenProps {
   onRaceSelect: (raceId: string) => void;
-  // 🟢 NEW PROPS: Receive state from parent
   selectedSeason: string;
   onSeasonChange: (season: string) => void;
 }
@@ -156,6 +155,7 @@ export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChan
   };
 
   // 🟢 FIX: Explicit Background Colors for Select Trigger
+  // Added "bg-white" (light) and "bg-neutral-900" (dark) to prevent transparency
   const selectTriggerClass = isDark 
     ? "bg-neutral-900 text-white border-neutral-700" 
     : "bg-white text-neutral-900 border-gray-200";
@@ -188,7 +188,6 @@ export function RaceSelectionScreen({ onRaceSelect, selectedSeason, onSeasonChan
             <div className={SPACING.CARD_GAP}>
               <div className={`${SPACING.BORDER_RADIUS} ${isDark ? 'bg-neutral-900' : 'bg-white'}`}>
                 <div className={SPACING.CARD_PADDING}>
-                  {/* 🟢 Using Props for Value/Change */}
                   <Select value={selectedSeason} onValueChange={onSeasonChange}>
                     <SelectTrigger 
                       className={`w-full rounded-xl shadow-md h-12 font-bold uppercase tracking-wide border-0 ring-0 focus:ring-0 ${selectTriggerClass}`}
