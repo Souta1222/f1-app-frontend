@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Flag, Trophy, Medal, Info, BrainCircuit } from 'lucide-react';
+import { ChevronLeft, Flag, Trophy, Medal, Info, TrendingUp, BrainCircuit } from 'lucide-react';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 
@@ -60,6 +60,19 @@ interface RaceDetailsScreenProps {
   onBack: () => void;
 }
 
+// --- TEAM'S SPACING CONSTANTS ---
+const SPACING = {
+  SECTION_MARGIN: 'mb-8',
+  SECTION_PADDING: 'px-4',
+  CARD_PADDING: 'p-3',
+  CARD_GAP: 'p-3',
+  BORDER_WIDTH: 'border-8',
+  BORDER_RADIUS: 'rounded-2xl',
+  CONTENT_GAP: 'space-y-4',
+  HEADER_MARGIN: 'mb-3',
+  COMPONENT_GAP: 'gap-3',
+} as const;
+
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -82,7 +95,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   // 2. Logic Modes
   const is2025 = safeId.includes('2025-summary') || year === '2025';
   const is2026 = year === '2026';
-  const shouldFetch = !is2025; // 🟢 UPDATED: Allow fetching for 2026 (Predictions)
+  const shouldFetch = !is2025; // 🟢 Fetch for 2026 (Predictions) or 2024/23 (Results)
 
   // 3. Data State
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
