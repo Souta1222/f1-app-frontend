@@ -283,7 +283,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         {podium[2] && (
                             <div className="flex flex-col items-center w-1/3">
                                 <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driver} />
-                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-8 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-10 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                     <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
                                     <div className="mt-2 font-black text-2xl opacity-30">3</div>
                                     <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[2].driver.split(' ').pop()}</div>
