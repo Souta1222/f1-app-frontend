@@ -49,7 +49,7 @@ const RESULTS_2025 = [
 interface RaceResult {
   position: number;
   driver: string;
-  driverId?: string | null; // Added for 2026 images
+  driverId?: string | null;
   team: string;
   points?: number;
   wins?: number;
@@ -159,15 +159,13 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
                 if (item && typeof item === 'object') {
-                    // Check if it's a Prediction object (has 'probability')
                     const isPred = item.probability !== undefined;
-                    
                     const driverName = isPred ? item.driver.name : String(item.Driver || item.driver || 'Unknown');
                     
                     cleanData.push({
                         position: parseInt(item.Position || item.position || '0'),
                         driver: driverName,
-                        driverId: getDriverIdByName(driverName), // 🟢 Resolve ID for images
+                        driverId: getDriverIdByName(driverName), 
                         team: isPred ? item.driver.team : String(item.Team || item.team || 'Unknown'),
                         points: item.Points ? parseFloat(item.Points) : undefined,
                         status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
@@ -252,40 +250,40 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
                     </h2>
                     
-                    <div className="flex items-end justify-center gap-3 h-48 max-w-sm mx-auto">
-                        {/* P2 */}
+                    <div className="flex items-end justify-center gap-3 h-60 max-w-sm mx-auto">
+                        {/* P2 (Rank 2) - Left */}
                         {podium[1] && (
                             <div className="flex flex-col items-center w-1/3">
                                 <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driver} />
-                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+                                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-28 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                     <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
                                     <div className="mt-2 font-black text-2xl opacity-30">2</div>
-                                    <div className="text-[10px] font-black uppercase text-center">{podium[1].driver.split(' ').pop()}</div>
+                                    <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[1].driver.split(' ').pop()}</div>
                                 </div>
                             </div>
                         )}
-                        {/* P1 */}
+                        {/* P1 (Rank 1) - Center */}
                         {podium[0] && (
                             <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
                                 <Crown className="w-6 h-6 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                                 <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driver} />
-                                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-36 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
+                                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-40 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
                                     <div className="mt-3 font-black text-4xl">1</div>
-                                    <div className="text-xs font-black uppercase text-center">{podium[0].driver.split(' ').pop()}</div>
+                                    <div className="text-xs font-black uppercase text-center leading-tight">{podium[0].driver.split(' ').pop()}</div>
                                     <div className="mt-1 px-2 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">
                                         {podium[0].probability}%
                                     </div>
                                 </div>
                             </div>
                         )}
-                        {/* P3 */}
+                        {/* P3 (Rank 3) - Right */}
                         {podium[2] && (
                             <div className="flex flex-col items-center w-1/3">
                                 <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driver} />
                                 <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-20 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                     <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
                                     <div className="mt-2 font-black text-2xl opacity-30">3</div>
-                                    <div className="text-[10px] font-black uppercase text-center">{podium[2].driver.split(' ').pop()}</div>
+                                    <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[2].driver.split(' ').pop()}</div>
                                 </div>
                             </div>
                         )}
@@ -299,7 +297,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     key={index}
                     className={`p-3 rounded-xl shadow-sm flex flex-col gap-2 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
                     style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
-                    onClick={() => is2026 && setSelectedPrediction(result)} // Click to open dialog only in 2026
+                    onClick={() => is2026 && setSelectedPrediction(result)} 
                 >
                     <div className="flex items-center gap-4">
                         <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
@@ -334,11 +332,9 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             )}
                         </div>
                         
-                        {/* Info Icon for 2026 to imply clickability */}
                         {is2026 && <Info className="w-4 h-4 text-gray-400" />}
                     </div>
 
-                    {/* Standard AI Details (For non-2026 or fallback) */}
                     {!is2026 && result.details && (
                         <div className={`mt-1 pl-12 pr-2 py-2 rounded-lg text-xs leading-relaxed flex gap-2 items-start ${isDark ? 'bg-neutral-800/50 text-neutral-400' : 'bg-slate-50 text-slate-600'}`}>
                             <Info className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />
