@@ -279,7 +279,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         </div>
       </div>
 
-      {/* 🟢 CUSTOM MODAL OVERLAY - Replaces standard Dialog to ensure correct layering */}
+      {/* 🟢 CUSTOM MODAL OVERLAY */}
       {selectedDriver && (
         <div 
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -292,11 +292,15 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content */}
+          {/* Modal Content - 🟢 FORCED SOLID BACKGROUND via Style */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-6 border ${
-              isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+              isDark ? 'border-neutral-700 text-white' : 'border-slate-200 text-slate-900'
             }`}
+            style={{ 
+                backgroundColor: isDark ? '#171717' : '#ffffff', // Force Solid Black/White
+                opacity: 1 
+            }}
           >
             {/* Close Button */}
             <button 
