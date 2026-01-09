@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { races, drivers } from '../lib/data'; // 🟢 Added 'drivers' import
-import { useTheme } from './ThemeContext';
+import { races, drivers } from '../lib/data'; 
+// @ts-ignore
+import { useTheme } from './../components/ThemeContext.tsx'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -11,7 +12,7 @@ const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 type PredictionCard = {
   id: string;
   driverName: string;
-  driverId: string | null; // 🟢 For fetching images
+  driverId: string | null; 
   team: string;
   position: number;
   probability: string;
@@ -22,7 +23,7 @@ type PredictionCard = {
   driver: { teamColor: string };
 };
 
-// Helper to find ID from Name (e.g. "Max Verstappen" -> "VER")
+// Helper to find ID from Name
 const getDriverIdByName = (fullName: string) => {
   const entry = Object.values(drivers).find(d => d.name === fullName);
   return entry ? entry.id : null;
@@ -83,7 +84,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const formattedResults: PredictionCard[] = backendList.map((item: any) => ({
             id: item.driver.name,
             driverName: item.driver.name,
-            driverId: getDriverIdByName(item.driver.name), // 🟢 Resolve ID
+            driverId: getDriverIdByName(item.driver.name), 
             team: item.driver.team,
             position: item.position,
             probability: item.probability + "%",
@@ -107,7 +108,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   // --- STYLES ---
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
-    : { backgroundColor: '#f0f2f5', color: '#0f172a' }; // Slightly darker gray for better contrast
+    : { backgroundColor: '#f0f2f5', color: '#0f172a' };
 
   const cardBg = isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -146,7 +147,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
+      // 🟢 FIX: Lowered z-index from 1000 to 40 so Dialog (z-50) can sit on top
+      className="fixed inset-0 z-40 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
       
@@ -184,9 +186,9 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
         </h2>
         
-        <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
+        <div className="flex items-end justify-center gap-3 h-60 max-w-sm mx-auto">
           
-          {/* P2 (Left) */}
+          {/* P2 (Left) - Medium Height */}
           {podium[1] && (
             <div className="flex flex-col items-center w-1/3">
                <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driverName} />
@@ -203,15 +205,13 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             </div>
           )}
 
-          {/* P1 (Center) */}
+          {/* P1 (Center) - Tallest */}
           {podium[0] && (
             <div className="flex flex-col items-center w-1/3 z-50 -mx-1 mb-2">
                <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
-               <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
-                 
+               <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-48 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
                  <div className={`mt-4 font-black text-5xl ${isDark ? 'text-white' : 'text-slate-900'}`}>1</div>
-                 
                  <div className="flex flex-col items-center justify-end h-full w-full pb-4">
                     <div className={`text-xs font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
                         {podium[0].driverName.split(' ').pop()}
@@ -224,11 +224,11 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             </div>
           )}
 
-          {/* P3 (Right) */}
+          {/* P3 (Right) - Shortest */}
           {podium[2] && (
             <div className="flex flex-col items-center w-1/3">
                <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driverName} />
-               <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+               <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-20 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                  <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
                  <div className={`mt-3 font-black text-3xl ${textSecondary} opacity-30`}>3</div>
                  <div className="flex flex-col items-center justify-end h-full w-full pb-3">
@@ -284,7 +284,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
       {/* DETAILS DIALOG */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        <DialogContent className={`rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+        <DialogContent className={`rounded-2xl max-w-[90vw] border z-50 ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {selectedDriver && (
             <>
               <DialogHeader>
