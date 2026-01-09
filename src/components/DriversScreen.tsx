@@ -9,9 +9,9 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle'; 
-import logo from '../styles/logo.png'; // 🟢 Team's Logo
+import logo from '../styles/logo.png'; 
 
-// 🟢 CONFIG: Using your ngrok URL for functionality
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
 const teams = [
@@ -55,7 +55,7 @@ export function DriversScreen() {
     });
   }, [driversList, searchQuery, selectedTeam]);
 
-  // 🟢 FUNCTIONALITY PRESERVED: Upload Logic
+  // Upload Logic
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -122,15 +122,15 @@ export function DriversScreen() {
       className="min-h-screen pb-24 font-sans w-full transition-colors duration-300"
       style={containerStyle}
     >
-      {/* 🟢 TEAM'S HEADER UI */}
+      {/* 🟢 FIXED HEADER: "fixed" keeps it pinned to viewport top */}
       <div 
-        className="sticky top-0 z-30 px-6 pt-12 pb-6 shadow-lg flex justify-between items-center transition-colors duration-300"
+        className="fixed top-0 left-0 right-0 z-50 px-6 pt-12 pb-6 shadow-lg flex justify-between items-center transition-colors duration-300"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
       >
         <div>
            {/* Logo Integration */}
            <div className="flex items-center gap-2 mt-6">
-                <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
+               <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
            </div>
         </div>
 
@@ -139,17 +139,18 @@ export function DriversScreen() {
         </div>
       </div>
 
-      {/* 🟢 TEAM'S TITLE BADGE */}
-      <div className="mt-6 mb-8 px-6">
-        <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
-          <h1 className="text-[10px] uppercase tracking-widest opacity-80">
-            2025 SEASON GRID
-          </h1>
+      {/* 🟢 PADDING FOR CONTENT: Pushes content down so it's not hidden behind fixed header */}
+      <div className="pt-32 px-4"> 
+      
+        {/* Title Badge */}
+        <div className="mb-8 pl-2">
+            <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
+            <h1 className="text-[10px] uppercase tracking-widest opacity-80">
+                2025 SEASON GRID
+            </h1>
+            </div>
         </div>
-      </div>
 
-      <div className="px-4 mt-6">
-        
         {/* AI Feature Card */}
         <div className="mb-6">
             <button
@@ -230,7 +231,7 @@ export function DriversScreen() {
             >
                 <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
                 <ImageWithFallback
-                    src={`/drivers/${driver.id}.png`} // 🟢 Using Local Images
+                    src={`/drivers/${driver.id}.png`} 
                     alt={driver.name}
                     className="w-full h-full object-cover object-top"
                 />
