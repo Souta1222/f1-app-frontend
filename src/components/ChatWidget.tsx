@@ -42,28 +42,43 @@ const SPACING = {
   MESSAGE_GAP: 'gap-2', 
 } as const;
 
-// Helper: Make Links Clickable
+// 🟢 FIX: Robust Message Renderer that handles Lists & Newlines correctly
 const renderMessageWithLinks = (text: string, isDark: boolean) => {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  // 1. Split text by newlines to force vertical stacking
+  const lines = text.split('\n');
 
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a 
-          key={index} 
-          href={part} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className={`font-bold underline ml-1 transition-colors ${
-            isDark ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
-          }`}
-        >
-          Read Article &rarr;
-        </a>
-      );
+  return lines.map((line, lineIndex) => {
+    // If line is empty (double newline), render a spacer
+    if (!line.trim()) {
+      return <div key={lineIndex} className="h-2" />; 
     }
-    return part;
+
+    // 2. Find URLs within the line
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = line.split(urlRegex);
+
+    return (
+      <div key={lineIndex} className="leading-relaxed break-words">
+        {parts.map((part, partIndex) => {
+          if (part.match(urlRegex)) {
+            return (
+              <a 
+                key={partIndex} 
+                href={part} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={`font-bold underline ml-1 inline-flex items-center transition-colors ${
+                  isDark ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'
+                }`}
+              >
+                Read Article &rarr;
+              </a>
+            );
+          }
+          return <span key={partIndex}>{part}</span>;
+        })}
+      </div>
+    );
   });
 };
 
@@ -190,7 +205,6 @@ export function ChatWidget() {
       
       const data = await res.json();
       
-      // 🟢 SMARTER REFRESH LOGIC
       const botReply = data.reply.toLowerCase();
       const userRequest = textToSend.toLowerCase();
       
@@ -310,8 +324,8 @@ export function ChatWidget() {
                     <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                       <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('message')} max-w-[90%] ${windowWidth < 768 ? 'max-w-[95%]' : ''}`}>
                         <div className={SPACING.CARD_GAP}>
-                          {/* 🟢 FIX: Added 'whitespace-pre-wrap' to respect backend newlines */}
-                          <div className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} ${windowWidth < 768 ? 'text-xs' : 'text-sm'} shadow-md leading-relaxed whitespace-pre-wrap border ${msg.sender === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'} ${getMessageStyle(msg.sender)}`}>
+                          <div className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} ${windowWidth < 768 ? 'text-xs' : 'text-sm'} shadow-md border ${msg.sender === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'} ${getMessageStyle(msg.sender)}`}>
+                            {/* 🟢 RENDERER CALLED HERE */}
                             {renderMessageWithLinks(msg.text, isDark)}
                           </div>
                         </div>
