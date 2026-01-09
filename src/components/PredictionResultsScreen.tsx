@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { races, drivers } from '../lib/data'; // 🟢 Added 'drivers' import
-import { useTheme } from './ThemeContext';
+import { races, drivers } from '../lib/data'; 
+// @ts-ignore
+import { useTheme } from './../components/ThemeContext.tsx'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -11,7 +12,7 @@ const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 type PredictionCard = {
   id: string;
   driverName: string;
-  driverId: string | null; // 🟢 For fetching images
+  driverId: string | null; 
   team: string;
   position: number;
   probability: string;
@@ -22,7 +23,7 @@ type PredictionCard = {
   driver: { teamColor: string };
 };
 
-// Helper to find ID from Name (e.g. "Max Verstappen" -> "VER")
+// Helper to find ID from Name
 const getDriverIdByName = (fullName: string) => {
   const entry = Object.values(drivers).find(d => d.name === fullName);
   return entry ? entry.id : null;
@@ -83,7 +84,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const formattedResults: PredictionCard[] = backendList.map((item: any) => ({
             id: item.driver.name,
             driverName: item.driver.name,
-            driverId: getDriverIdByName(item.driver.name), // 🟢 Resolve ID
+            driverId: getDriverIdByName(item.driver.name), 
             team: item.driver.team,
             position: item.position,
             probability: item.probability + "%",
@@ -107,7 +108,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   // --- STYLES ---
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
-    : { backgroundColor: '#f0f2f5', color: '#0f172a' }; // Slightly darker gray for better contrast
+    : { backgroundColor: '#f0f2f5', color: '#0f172a' };
 
   const cardBg = isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200';
   const textPrimary = isDark ? 'text-white' : 'text-slate-900';
@@ -128,7 +129,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   const podium = predictions.slice(0, 3);
   
-  // Helper for Podium Image
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
     const src = id ? `/drivers/${id}.png` : null;
     return (
@@ -146,7 +146,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   return (
     <div 
-      className="fixed inset-0 z-[1000] overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
+      // 🟢 FIX 1: Lowered z-index to 40 so the Modal Overlay (usually z-50) works correctly
+      className="fixed inset-0 z-40 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
       
@@ -178,14 +179,13 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
           </div>
       </div>
 
-      {/* 🟢 IMPROVED PODIUM SECTION */}
+      {/* PODIUM SECTION (UNCHANGED) */}
       <div className={`px-4 py-10 relative ${isDark ? 'bg-gradient-to-b from-neutral-900 to-transparent' : 'bg-gradient-to-b from-slate-100 to-transparent'}`}>
         <h2 className={`uppercase font-bold tracking-widest text-[10px] mb-8 text-center flex items-center justify-center gap-2 ${textSecondary}`}>
             <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
         </h2>
         
         <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
-          
           {/* P2 (Left) */}
           {podium[1] && (
             <div className="flex flex-col items-center w-1/3">
@@ -209,9 +209,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
-                 
                  <div className={`mt-4 font-black text-5xl ${isDark ? 'text-white' : 'text-slate-900'}`}>1</div>
-                 
                  <div className="flex flex-col items-center justify-end h-full w-full pb-4">
                     <div className={`text-xs font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
                         {podium[0].driverName.split(' ').pop()}
@@ -284,7 +282,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
       {/* DETAILS DIALOG */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        <DialogContent className={`rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+        {/* 🟢 FIX 2: Added z-[100] and opacity-100 to ensure the modal content is ABOVE the overlay and SOLID */}
+        <DialogContent className={`rounded-2xl max-w-[90vw] border z-[100] opacity-100 ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {selectedDriver && (
             <>
               <DialogHeader>
