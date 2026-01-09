@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { races, drivers } from '../lib/data'; 
-// @ts-ignore
-import { useTheme } from './../components/ThemeContext.tsx'; 
+import { useTheme } from './ThemeContext';
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -147,9 +146,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   return (
     <div 
-      // 🟢 FIX 1: Changed z-[1000] to z-30. This is CRITICAL.
-      // 1000 was too high, covering the modal's z-50 layer. 
-      // z-30 is enough to sit above the home screen but below the modal.
+      // 🟢 FIX 1: Changed z-[1000] to z-30. 
+      // This solves the layering conflict. The screen is now BELOW the Modal (z-50).
       className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
@@ -189,6 +187,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         </h2>
         
         <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
+          
           {/* P2 (Left) */}
           {podium[1] && (
             <div className="flex flex-col items-center w-1/3">
@@ -285,12 +284,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
       {/* DETAILS DIALOG */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        {/* 🟢 FIX 2: Added '!z-[200]' and inline style for z-index.
-            This forces the modal box to sit on top of the dark overlay. */}
-        <DialogContent 
-            className={`!z-[200] rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-            style={{ zIndex: 200 }} 
-        >
+        {/* 🟢 FIX 2: Added '!z-[200]' here. This FORCES the content layer to be above the overlay (z-50) */}
+        <DialogContent className={`!z-[200] rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {selectedDriver && (
             <>
               <DialogHeader>
