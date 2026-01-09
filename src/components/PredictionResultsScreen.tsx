@@ -151,7 +151,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         
         {/* HEADER */}
         <div 
-          className="sticky top-0 z-20 shadow-lg px-4 py-4"
+          // 🟢 FIX: Increased z-index to 50 to sit above all scrolling content (like the P1 Crown)
+          className="sticky top-0 z-50 shadow-lg px-4 py-4"
           style={{ background: 'linear-gradient(to right, #991b1b, #7f1d1d)' }}
         >
             <button onClick={onBack} className="flex items-center text-white/90 hover:text-white mb-4 transition-colors">
@@ -203,7 +204,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
             {/* P1 (Center) */}
             {podium[0] && (
-              <div className="flex flex-col items-center w-1/3 z-50 -mx-1 mb-2">
+              <div className="flex flex-col items-center w-1/3 -mx-1 mb-2">
                 <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
                 <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
                 <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
@@ -292,7 +293,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - Forced Colors & Spacing */}
+          {/* Modal Content */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
@@ -346,7 +347,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                 <ul className="space-y-4">
                     {selectedDriver.reasons.positive.map((r, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
-                            {/* 🟢 FIXED: Bullet is now a div shape for perfect alignment */}
                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
                             <span>{r}</span>
                         </li>
