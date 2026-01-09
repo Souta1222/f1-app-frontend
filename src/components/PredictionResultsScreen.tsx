@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User, X } from 'lucide-react';
 import { races, drivers } from '../lib/data'; 
 import { useTheme } from './ThemeContext';
 
@@ -145,7 +144,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   return (
     <>
-      {/* 🟢 FIX 1: Main Content Container set to z-0 (Lowest Level) */}
       <div 
         className="fixed inset-0 z-0 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
         style={containerStyle}
@@ -281,51 +279,78 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         </div>
       </div>
 
-      {/* 🟢 FIX 2: Dialog MOVED OUTSIDE fixed container and forced to Max Z-Index */}
-      <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        {/* Style prop ensures NO overriding can hide this layer */}
-        <DialogContent 
-            className={`rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-            style={{ zIndex: 9999, opacity: 1, position: 'fixed' }}
+      {/* 🟢 CUSTOM MODAL OVERLAY - Replaces standard Dialog to ensure correct layering */}
+      {selectedDriver && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
         >
-          {selectedDriver && (
-            <>
-              <DialogHeader>
-                <DialogTitle className={`font-bold text-xl flex items-center gap-2 ${textPrimary}`}>
-                  <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></div>
-                  {selectedDriver.driverName}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="pt-4 space-y-4">
-                <div className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="flex justify-between items-end mb-2">
-                        <span className={`text-xs font-bold uppercase ${textSecondary}`}>Win Probability</span>
-                        <span className="text-2xl font-bold text-green-600 font-mono">{selectedDriver.probability}</span>
-                    </div>
-                    <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-neutral-700' : 'bg-slate-200'}`}>
-                        <div className="h-full bg-green-500" style={{ width: selectedDriver.probability }} />
-                    </div>
-                </div>
-                <div>
-                    <div className="flex items-center gap-2 text-green-600 mb-2 font-bold text-xs uppercase"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
-                    <ul className="space-y-2">
-                        {selectedDriver.reasons.positive.map((r, i) => (
-                            <li key={i} className={`flex gap-2 text-sm ${textPrimary}`}>
-                                <span className="text-green-500">●</span> {r}
-                            </li>
-                        ))}
-                        {selectedDriver.reasons.positive.length === 0 && (
-                             <li className={`flex gap-2 text-sm ${textSecondary}`}>
-                                <span className="text-gray-500">●</span> Standard performance expected based on current form.
-                            </li>
-                        )}
-                    </ul>
-                </div>
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedDriver(null)}
+          />
+          
+          {/* Modal Content */}
+          <div 
+            className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-6 border ${
+              isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+            }`}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setSelectedDriver(null)}
+              className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${
+                isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-500'
+              }`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1.5 h-8 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></div>
+              <div>
+                <h2 className="text-2xl font-bold leading-none">{selectedDriver.driverName}</h2>
+                <span className={`text-sm font-bold uppercase tracking-wider ${textSecondary}`}>{selectedDriver.team}</span>
               </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            </div>
+
+            {/* Stats Card */}
+            <div className={`p-5 rounded-xl border mb-6 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                <div className="flex justify-between items-end mb-3">
+                    <span className={`text-xs font-bold uppercase ${textSecondary}`}>Win Probability</span>
+                    <span className="text-3xl font-black text-green-600 font-mono tracking-tight">{selectedDriver.probability}</span>
+                </div>
+                <div className={`h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-neutral-700' : 'bg-slate-200'}`}>
+                    <div className="h-full bg-green-500 transition-all duration-1000 ease-out" style={{ width: selectedDriver.probability }} />
+                </div>
+            </div>
+
+            {/* Analysis List */}
+            <div>
+                <div className="flex items-center gap-2 text-green-600 mb-3 font-bold text-xs uppercase tracking-widest">
+                  <TrendingUp className="w-4 h-4"/> AI Analysis
+                </div>
+                <ul className="space-y-3 pl-1">
+                    {selectedDriver.reasons.positive.map((r, i) => (
+                        <li key={i} className={`flex gap-3 text-sm leading-relaxed ${textPrimary}`}>
+                            <span className="text-green-500 mt-1">●</span> 
+                            {r}
+                        </li>
+                    ))}
+                    {selectedDriver.reasons.positive.length === 0 && (
+                          <li className={`flex gap-3 text-sm leading-relaxed ${textSecondary}`}>
+                            <span className="text-gray-500 mt-1">●</span> 
+                            Standard performance expected based on current form.
+                        </li>
+                    )}
+                </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
