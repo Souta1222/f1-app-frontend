@@ -292,13 +292,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - 🟢 FORCED SOLID BACKGROUND via Style */}
+          {/* Modal Content - 🟢 FORCED COLORS via style */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-6 border ${
-              isDark ? 'border-neutral-700 text-white' : 'border-slate-200 text-slate-900'
+              isDark ? 'border-neutral-700' : 'border-slate-200'
             }`}
             style={{ 
-                backgroundColor: isDark ? '#171717' : '#ffffff', // Force Solid Black/White
+                backgroundColor: isDark ? '#171717' : '#ffffff', // Solid Background
+                color: isDark ? '#ffffff' : '#0f172a', // Solid Text Color
                 opacity: 1 
             }}
           >
@@ -317,14 +318,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               <div className="w-1.5 h-8 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></div>
               <div>
                 <h2 className="text-2xl font-bold leading-none">{selectedDriver.driverName}</h2>
-                <span className={`text-sm font-bold uppercase tracking-wider ${textSecondary}`}>{selectedDriver.team}</span>
+                <span className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>{selectedDriver.team}</span>
               </div>
             </div>
 
             {/* Stats Card */}
             <div className={`p-5 rounded-xl border mb-6 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-between items-end mb-3">
-                    <span className={`text-xs font-bold uppercase ${textSecondary}`}>Win Probability</span>
+                    <span className={`text-xs font-bold uppercase ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Win Probability</span>
                     <span className="text-3xl font-black text-green-600 font-mono tracking-tight">{selectedDriver.probability}</span>
                 </div>
                 <div className={`h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-neutral-700' : 'bg-slate-200'}`}>
@@ -339,13 +340,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                 </div>
                 <ul className="space-y-3 pl-1">
                     {selectedDriver.reasons.positive.map((r, i) => (
-                        <li key={i} className={`flex gap-3 text-sm leading-relaxed ${textPrimary}`}>
+                        <li key={i} className="flex gap-3 text-sm leading-relaxed">
                             <span className="text-green-500 mt-1">●</span> 
-                            {r}
+                            {/* Explicitly inherits forced color */}
+                            <span>{r}</span>
                         </li>
                     ))}
                     {selectedDriver.reasons.positive.length === 0 && (
-                          <li className={`flex gap-3 text-sm leading-relaxed ${textSecondary}`}>
+                          <li className={`flex gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                             <span className="text-gray-500 mt-1">●</span> 
                             Standard performance expected based on current form.
                         </li>
