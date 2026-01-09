@@ -57,7 +57,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     
     const updateCountdown = () => {
       const now = new Date();
-      const raceDateStr = nextRace.date + (nextRace.time ? ' ' + nextRace.time : 'T12:00:00');
+      const raceDateStr = nextRace.date + (nextRace.time ? 'T' + nextRace.time : 'T12:00:00');
       const raceDate = new Date(raceDateStr);
       const diff = raceDate.getTime() - now.getTime();
       
