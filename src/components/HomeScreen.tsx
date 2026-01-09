@@ -46,10 +46,9 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   
-  // 🟢 NEW: Refresh Trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
-  // --- COUNTDOWN LOGIC ---
+  // --- COUNTDOWN LOGIC (FIXED) ---
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
   useEffect(() => {
@@ -57,8 +56,22 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     
     const updateCountdown = () => {
       const now = new Date();
-      const raceDateStr = nextRace.date + (nextRace.time ? 'T' + nextRace.time : 'T12:00:00');
+      
+      // 🟢 FIX: Use 'YYYY/MM/DD HH:mm:ss' format.
+      // Replacing dashes with slashes makes it compatible with Safari/iOS AND Chrome.
+      // We use a space ' ' separator instead of 'T'.
+      const cleanDate = nextRace.date.replace(/-/g, '/'); 
+      const cleanTime = nextRace.time ? nextRace.time : '12:00:00';
+      const raceDateStr = `${cleanDate} ${cleanTime}`;
+      
       const raceDate = new Date(raceDateStr);
+      
+      // Safety check if date parsing failed
+      if (isNaN(raceDate.getTime())) {
+          console.error("Invalid Date parsed:", raceDateStr);
+          return;
+      }
+
       const diff = raceDate.getTime() - now.getTime();
       
       if (diff > 0) {
@@ -75,7 +88,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     return () => clearInterval(interval);
   }, [nextRace]);
 
-  // --- 🟢 ROBUST LISTENER FOR CHATBOT UPDATES ---
+  // --- LISTENER FOR CHATBOT UPDATES ---
   useEffect(() => {
     const handleNewsUpdateSignal = () => {
         console.log("📣 HomeScreen: Received update signal!");
