@@ -6,7 +6,6 @@ import {
   Bot, 
   Trash2, 
   RefreshCw,
-  Sparkles,
   Zap
 } from 'lucide-react';
 // @ts-ignore
@@ -192,7 +191,6 @@ export function ChatWidget() {
       const data = await res.json();
       
       // 🟢 SMARTER REFRESH LOGIC
-      // If user asked to update OR if bot confirms it found news
       const botReply = data.reply.toLowerCase();
       const userRequest = textToSend.toLowerCase();
       
@@ -203,10 +201,7 @@ export function ChatWidget() {
           botReply.includes("articles")
       ) {
         console.log("📣 ChatWidget: Triggering Global News Refresh!");
-        // Dispatch event immediately
         window.dispatchEvent(new Event('newsUpdated'));
-        
-        // Dispatch again after 1s just to be safe (file write lag)
         setTimeout(() => window.dispatchEvent(new Event('newsUpdated')), 1000);
       }
       
@@ -315,7 +310,8 @@ export function ChatWidget() {
                     <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                       <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('message')} max-w-[90%] ${windowWidth < 768 ? 'max-w-[95%]' : ''}`}>
                         <div className={SPACING.CARD_GAP}>
-                          <div className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} ${windowWidth < 768 ? 'text-xs' : 'text-sm'} shadow-md leading-relaxed border ${msg.sender === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'} ${getMessageStyle(msg.sender)}`}>
+                          {/* 🟢 FIX: Added 'whitespace-pre-wrap' to respect backend newlines */}
+                          <div className={`${SPACING.BORDER_RADIUS} ${SPACING.CARD_PADDING} ${windowWidth < 768 ? 'text-xs' : 'text-sm'} shadow-md leading-relaxed whitespace-pre-wrap border ${msg.sender === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'} ${getMessageStyle(msg.sender)}`}>
                             {renderMessageWithLinks(msg.text, isDark)}
                           </div>
                         </div>
