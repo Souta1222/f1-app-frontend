@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp, RefreshCw, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronRight, Newspaper, Zap, MapPin, TrendingUp, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { races } from '../lib/data';
 import { FanPulseWidget } from './FanPulseWidget';
@@ -48,7 +48,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
-  // --- COUNTDOWN LOGIC (FIXED) ---
+  // --- COUNTDOWN LOGIC ---
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
   useEffect(() => {
@@ -56,21 +56,13 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     
     const updateCountdown = () => {
       const now = new Date();
-      
-      // 🟢 FIX: Use 'YYYY/MM/DD HH:mm:ss' format.
-      // Replacing dashes with slashes makes it compatible with Safari/iOS AND Chrome.
-      // We use a space ' ' separator instead of 'T'.
+      // Safe Date Parsing for iOS/Safari (YYYY/MM/DD)
       const cleanDate = nextRace.date.replace(/-/g, '/'); 
       const cleanTime = nextRace.time ? nextRace.time : '12:00:00';
       const raceDateStr = `${cleanDate} ${cleanTime}`;
-      
       const raceDate = new Date(raceDateStr);
       
-      // Safety check if date parsing failed
-      if (isNaN(raceDate.getTime())) {
-          console.error("Invalid Date parsed:", raceDateStr);
-          return;
-      }
+      if (isNaN(raceDate.getTime())) return;
 
       const diff = raceDate.getTime() - now.getTime();
       
@@ -265,14 +257,30 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     ))}
                   </div>
 
-                  {/* PREDICT BUTTON */}
+                  {/* 🟢 NEW EYE-CATCHY PREDICT BUTTON */}
                   <Button 
                     onClick={() => onPredictRace(nextRace.id)}
-                    className={`w-full font-bold uppercase tracking-widest h-12 rounded-xl shadow-lg border-0 transition-all mt-4 ${isDark ? 'bg-red-600 text-white hover:bg-red-700 border border-red-500' : 'bg-white text-slate-900 hover:bg-gray-100'}`}
+                    className={`
+                        group relative w-full h-14 mt-4 overflow-hidden rounded-xl border-0
+                        font-black uppercase tracking-widest text-white shadow-xl transition-all duration-300
+                        hover:scale-[1.02] active:scale-[0.98]
+                        ${isDark 
+                            ? 'bg-gradient-to-r from-red-700 via-red-600 to-orange-600 shadow-red-900/40' 
+                            : 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 shadow-red-500/40'
+                        }
+                    `}
                   >
-                    View AI Prediction
-                    <TrendingUp className={`w-4 h-4 ml-2 ${isDark ? 'text-white' : 'text-red-600'}`} />
+                    {/* Animated Shine Effect */}
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-in-out z-10" />
+                    
+                    {/* Content */}
+                    <div className="relative z-20 flex items-center justify-center gap-2">
+                        <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse fill-yellow-300" />
+                        <span className="text-sm">View AI Prediction</span>
+                        <TrendingUp className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
+                    </div>
                   </Button>
+
                 </div>
               </div>
             </div>
@@ -315,7 +323,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 </div>
               </div>
               
-              {/* 🟢 MANUAL REFRESH BUTTON */}
+              {/* REFRESH BUTTON */}
               <div className={`flex items-center ${SPACING.COMPONENT_GAP}`}>
                 {lastUpdated && (
                     <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
