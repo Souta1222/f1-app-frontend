@@ -147,7 +147,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   return (
     <div 
       // 🟢 FIX 1: Changed z-[1000] to z-30. 
-      // This ensures the screen is BELOW the standard Modal overlay (which is usually z-50).
+      // This solves the layering conflict. The screen is now BELOW the Modal (z-50).
       className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
@@ -284,7 +284,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
       {/* DETAILS DIALOG */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        {/* 🟢 FIX 2: Added '!z-[200]' to FORCE the dialog content on top of any overlay */}
+        {/* 🟢 FIX 2: Added '!z-[200]' here. This FORCES the content layer to be above the overlay (z-50) */}
         <DialogContent className={`!z-[200] rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {selectedDriver && (
             <>
