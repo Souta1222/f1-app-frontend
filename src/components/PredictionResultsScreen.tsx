@@ -292,14 +292,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - 🟢 FORCED COLORS via style */}
+          {/* Modal Content - 🟢 ADDED p-8 and pr-12 */}
           <div 
-            className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-6 border ${
+            className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
             }`}
             style={{ 
-                backgroundColor: isDark ? '#171717' : '#ffffff', // Solid Background
-                color: isDark ? '#ffffff' : '#0f172a', // Solid Text Color
+                backgroundColor: isDark ? '#171717' : '#ffffff', 
+                color: isDark ? '#ffffff' : '#0f172a',
                 opacity: 1 
             }}
           >
@@ -313,8 +313,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               <X className="w-5 h-5" />
             </button>
 
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
+            {/* Header - 🟢 Added pr-12 for spacing near close button */}
+            <div className="flex items-center gap-3 mb-6 pr-12">
               <div className="w-1.5 h-8 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></div>
               <div>
                 <h2 className="text-2xl font-bold leading-none">{selectedDriver.driverName}</h2>
@@ -323,7 +323,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             </div>
 
             {/* Stats Card */}
-            <div className={`p-5 rounded-xl border mb-6 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+            <div className={`p-6 rounded-xl border mb-6 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-between items-end mb-3">
                     <span className={`text-xs font-bold uppercase ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Win Probability</span>
                     <span className="text-3xl font-black text-green-600 font-mono tracking-tight">{selectedDriver.probability}</span>
