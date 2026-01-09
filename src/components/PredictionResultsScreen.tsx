@@ -143,12 +143,11 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
     );
   };
 
-  // 🟢 FIX START: Use a Fragment to separate the fixed background from the Dialog
   return (
     <>
-      {/* 1. Main Screen Content (Fixed Background) */}
+      {/* 🟢 FIX 1: Main Content Container set to z-0 (Lowest Level) */}
       <div 
-        className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
+        className="fixed inset-0 z-0 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
         style={containerStyle}
       >
         
@@ -282,11 +281,12 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         </div>
       </div>
 
-      {/* 2. Dialog Component - MOVED OUTSIDE THE FIXED CONTAINER */}
+      {/* 🟢 FIX 2: Dialog MOVED OUTSIDE fixed container and forced to Max Z-Index */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
+        {/* Style prop ensures NO overriding can hide this layer */}
         <DialogContent 
-          className={`!z-[9999] rounded-2xl max-w-[90vw] border shadow-2xl ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-          style={{ opacity: 1 }}
+            className={`rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+            style={{ zIndex: 9999, opacity: 1, position: 'fixed' }}
         >
           {selectedDriver && (
             <>
