@@ -128,7 +128,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   const podium = predictions.slice(0, 3);
   
-  // Helper for Podium Image
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
     const src = id ? `/drivers/${id}.png` : null;
     return (
@@ -144,148 +143,151 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
     );
   };
 
+  // 🟢 FIX START: Use a Fragment to separate the fixed background from the Dialog
   return (
-    <div 
-      // 🟢 FIX 1: Changed z-[1000] to z-30. 
-      // This solves the layering conflict. The screen is now BELOW the Modal (z-50).
-      className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
-      style={containerStyle}
-    >
-      
-      {/* HEADER */}
+    <>
+      {/* 1. Main Screen Content (Fixed Background) */}
       <div 
-        className="sticky top-0 z-20 shadow-lg px-4 py-4"
-        style={{ background: 'linear-gradient(to right, #991b1b, #7f1d1d)' }}
+        className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
+        style={containerStyle}
       >
-          <button onClick={onBack} className="flex items-center text-white/90 hover:text-white mb-4 transition-colors">
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            <span className="font-medium text-sm">Back</span>
-          </button>
-          
-          <div className="flex justify-between items-end">
-            <div className="flex flex-col">
-                <div className="flex items-center gap-3">
-                    <span className="text-4xl drop-shadow-md">{race.flag}</span>
-                    <div>
-                        <h1 className="text-white uppercase font-black text-2xl leading-none tracking-tight">{race.name}</h1>
-                        <p className="text-xs font-bold mt-1 uppercase tracking-widest text-red-200">{race.circuit}</p>
-                    </div>
-                </div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                <span className="text-[10px] font-bold uppercase text-white tracking-widest">
-                    AI Forecast
-                </span>
-            </div>
-          </div>
-      </div>
-
-      {/* PODIUM SECTION */}
-      <div className={`px-4 py-10 relative ${isDark ? 'bg-gradient-to-b from-neutral-900 to-transparent' : 'bg-gradient-to-b from-slate-100 to-transparent'}`}>
-        <h2 className={`uppercase font-bold tracking-widest text-[10px] mb-8 text-center flex items-center justify-center gap-2 ${textSecondary}`}>
-            <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
-        </h2>
         
-        <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
+        {/* HEADER */}
+        <div 
+          className="sticky top-0 z-20 shadow-lg px-4 py-4"
+          style={{ background: 'linear-gradient(to right, #991b1b, #7f1d1d)' }}
+        >
+            <button onClick={onBack} className="flex items-center text-white/90 hover:text-white mb-4 transition-colors">
+              <ChevronLeft className="w-5 h-5 mr-1" />
+              <span className="font-medium text-sm">Back</span>
+            </button>
+            
+            <div className="flex justify-between items-end">
+              <div className="flex flex-col">
+                  <div className="flex items-center gap-3">
+                      <span className="text-4xl drop-shadow-md">{race.flag}</span>
+                      <div>
+                          <h1 className="text-white uppercase font-black text-2xl leading-none tracking-tight">{race.name}</h1>
+                          <p className="text-xs font-bold mt-1 uppercase tracking-widest text-red-200">{race.circuit}</p>
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                  <span className="text-[10px] font-bold uppercase text-white tracking-widest">
+                      AI Forecast
+                  </span>
+              </div>
+            </div>
+        </div>
+
+        {/* PODIUM SECTION */}
+        <div className={`px-4 py-10 relative ${isDark ? 'bg-gradient-to-b from-neutral-900 to-transparent' : 'bg-gradient-to-b from-slate-100 to-transparent'}`}>
+          <h2 className={`uppercase font-bold tracking-widest text-[10px] mb-8 text-center flex items-center justify-center gap-2 ${textSecondary}`}>
+              <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
+          </h2>
           
-          {/* P2 (Left) */}
-          {podium[1] && (
-            <div className="flex flex-col items-center w-1/3">
-               <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driverName} />
-               <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-32 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
-                 <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
-                 <div className={`mt-3 font-black text-3xl ${textSecondary} opacity-30`}>2</div>
-                 <div className="flex flex-col items-center justify-end h-full w-full pb-3">
-                    <div className={`text-[10px] font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
-                        {podium[1].driverName.split(' ').pop()}
-                    </div>
-                    <div className="mt-1 text-[9px] font-bold text-gray-500">{podium[1].probability}</div>
-                 </div>
-               </div>
-            </div>
-          )}
+          <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
+            {/* P2 (Left) */}
+            {podium[1] && (
+              <div className="flex flex-col items-center w-1/3">
+                <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driverName} />
+                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-32 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+                  <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
+                  <div className={`mt-3 font-black text-3xl ${textSecondary} opacity-30`}>2</div>
+                  <div className="flex flex-col items-center justify-end h-full w-full pb-3">
+                      <div className={`text-[10px] font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
+                          {podium[1].driverName.split(' ').pop()}
+                      </div>
+                      <div className="mt-1 text-[9px] font-bold text-gray-500">{podium[1].probability}</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* P1 (Center) */}
-          {podium[0] && (
-            <div className="flex flex-col items-center w-1/3 z-50 -mx-1 mb-2">
-               <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
-               <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
-               <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
-                 <div className={`mt-4 font-black text-5xl ${isDark ? 'text-white' : 'text-slate-900'}`}>1</div>
-                 <div className="flex flex-col items-center justify-end h-full w-full pb-4">
-                    <div className={`text-xs font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
-                        {podium[0].driverName.split(' ').pop()}
-                    </div>
-                    <div className={`mt-2 px-2 py-0.5 rounded text-[10px] font-bold ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'}`}>
-                        {podium[0].probability} Win
-                    </div>
-                 </div>
-               </div>
-            </div>
-          )}
+            {/* P1 (Center) */}
+            {podium[0] && (
+              <div className="flex flex-col items-center w-1/3 z-50 -mx-1 mb-2">
+                <Crown className="w-8 h-8 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
+                <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driverName} />
+                <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-44 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
+                  <div className={`mt-4 font-black text-5xl ${isDark ? 'text-white' : 'text-slate-900'}`}>1</div>
+                  <div className="flex flex-col items-center justify-end h-full w-full pb-4">
+                      <div className={`text-xs font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
+                          {podium[0].driverName.split(' ').pop()}
+                      </div>
+                      <div className={`mt-2 px-2 py-0.5 rounded text-[10px] font-bold ${isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'}`}>
+                          {podium[0].probability} Win
+                      </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* P3 (Right) */}
-          {podium[2] && (
-            <div className="flex flex-col items-center w-1/3">
-               <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driverName} />
-               <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
-                 <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
-                 <div className={`mt-3 font-black text-3xl ${textSecondary} opacity-30`}>3</div>
-                 <div className="flex flex-col items-center justify-end h-full w-full pb-3">
-                    <div className={`text-[10px] font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
-                        {podium[2].driverName.split(' ').pop()}
+            {/* P3 (Right) */}
+            {podium[2] && (
+              <div className="flex flex-col items-center w-1/3">
+                <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driverName} />
+                <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
+                  <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
+                  <div className={`mt-3 font-black text-3xl ${textSecondary} opacity-30`}>3</div>
+                  <div className="flex flex-col items-center justify-end h-full w-full pb-3">
+                      <div className={`text-[10px] font-black uppercase text-center leading-tight px-1 ${textPrimary}`}>
+                          {podium[2].driverName.split(' ').pop()}
+                      </div>
+                      <div className="mt-1 text-[9px] font-bold text-gray-500">{podium[2].probability}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* FULL GRID LIST */}
+        <div className="px-4 space-y-3 pt-2">
+            <div className={`text-xs font-bold uppercase tracking-widest mb-2 px-1 ${textSecondary}`}>Full Grid Prediction</div>
+            {predictions.map((p) => (
+              <div 
+                  key={p.id} 
+                  className={`rounded-xl border shadow-sm p-3 flex items-center justify-between transition-colors active:scale-[0.99] ${cardBg}`}
+                  style={{ borderLeft: `4px solid ${getTeamColor(p.team)}` }}
+              >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                        p.position === 1 ? 'bg-yellow-100 text-yellow-700' :
+                        p.position === 2 ? 'bg-gray-200 text-gray-700' :
+                        p.position === 3 ? 'bg-orange-100 text-orange-800' :
+                        (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
+                    }`}>
+                      {p.position}
                     </div>
-                    <div className="mt-1 text-[9px] font-bold text-gray-500">{podium[2].probability}</div>
-                 </div>
-               </div>
-            </div>
-          )}
+                    <div>
+                      <div className={`font-bold text-sm ${textPrimary}`}>{p.driverName}</div>
+                      <div className={`text-[10px] font-bold uppercase ${textSecondary}`}>{p.team}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                      <div className="text-right">
+                          <div className="text-[10px] font-bold text-gray-400 uppercase">Win %</div>
+                          <div className="text-green-600 font-bold font-mono text-sm">{p.probability}</div>
+                      </div>
+                      <button 
+                          onClick={() => setSelectedDriver(p)} 
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                      >
+                          <Info className="w-4 h-4" />
+                      </button>
+                  </div>
+              </div>
+            ))}
         </div>
       </div>
 
-      {/* FULL GRID LIST */}
-      <div className="px-4 space-y-3 pt-2">
-          <div className={`text-xs font-bold uppercase tracking-widest mb-2 px-1 ${textSecondary}`}>Full Grid Prediction</div>
-          {predictions.map((p) => (
-            <div 
-                key={p.id} 
-                className={`rounded-xl border shadow-sm p-3 flex items-center justify-between transition-colors active:scale-[0.99] ${cardBg}`}
-                style={{ borderLeft: `4px solid ${getTeamColor(p.team)}` }}
-            >
-                <div className="flex items-center gap-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                      p.position === 1 ? 'bg-yellow-100 text-yellow-700' :
-                      p.position === 2 ? 'bg-gray-200 text-gray-700' :
-                      p.position === 3 ? 'bg-orange-100 text-orange-800' :
-                      (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
-                  }`}>
-                    {p.position}
-                  </div>
-                  <div>
-                    <div className={`font-bold text-sm ${textPrimary}`}>{p.driverName}</div>
-                    <div className={`text-[10px] font-bold uppercase ${textSecondary}`}>{p.team}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="text-right">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase">Win %</div>
-                        <div className="text-green-600 font-bold font-mono text-sm">{p.probability}</div>
-                    </div>
-                    <button 
-                        onClick={() => setSelectedDriver(p)} 
-                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-                    >
-                        <Info className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-          ))}
-      </div>
-
-      {/* DETAILS DIALOG */}
+      {/* 2. Dialog Component - MOVED OUTSIDE THE FIXED CONTAINER */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        {/* 🟢 FIX 2: Added '!z-[200]' here. This FORCES the content layer to be above the overlay (z-50) */}
-        <DialogContent className={`!z-[200] rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+        <DialogContent 
+          className={`!z-[9999] rounded-2xl max-w-[90vw] border shadow-2xl ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+          style={{ opacity: 1 }}
+        >
           {selectedDriver && (
             <>
               <DialogHeader>
@@ -324,7 +326,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
           )}
         </DialogContent>
       </Dialog>
-      
-    </div>
+    </>
   );
 }
