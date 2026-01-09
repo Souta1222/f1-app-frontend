@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { races, drivers } from '../lib/data'; 
-// @ts-ignore
-import { useTheme } from './../components/ThemeContext.tsx'; 
+import { useTheme } from './ThemeContext';
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -129,6 +128,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   const podium = predictions.slice(0, 3);
   
+  // Helper for Podium Image
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
     const src = id ? `/drivers/${id}.png` : null;
     return (
@@ -146,8 +146,9 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
   return (
     <div 
-      // 🟢 FIX 1: Lowered z-index to 40 so the Modal Overlay (usually z-50) works correctly
-      className="fixed inset-0 z-40 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
+      // 🟢 FIX 1: Changed z-[1000] to z-30. 
+      // This ensures the screen is BELOW the standard Modal overlay (which is usually z-50).
+      className="fixed inset-0 z-30 overflow-y-auto font-sans pb-20 w-full h-full transition-colors duration-300"
       style={containerStyle}
     >
       
@@ -179,13 +180,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
           </div>
       </div>
 
-      {/* PODIUM SECTION (UNCHANGED) */}
+      {/* PODIUM SECTION */}
       <div className={`px-4 py-10 relative ${isDark ? 'bg-gradient-to-b from-neutral-900 to-transparent' : 'bg-gradient-to-b from-slate-100 to-transparent'}`}>
         <h2 className={`uppercase font-bold tracking-widest text-[10px] mb-8 text-center flex items-center justify-center gap-2 ${textSecondary}`}>
             <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
         </h2>
         
         <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
+          
           {/* P2 (Left) */}
           {podium[1] && (
             <div className="flex flex-col items-center w-1/3">
@@ -282,8 +284,8 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
       {/* DETAILS DIALOG */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        {/* 🟢 FIX 2: Added z-[100] and opacity-100 to ensure the modal content is ABOVE the overlay and SOLID */}
-        <DialogContent className={`rounded-2xl max-w-[90vw] border z-[100] opacity-100 ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+        {/* 🟢 FIX 2: Added '!z-[200]' to FORCE the dialog content on top of any overlay */}
+        <DialogContent className={`!z-[200] rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
           {selectedDriver && (
             <>
               <DialogHeader>
