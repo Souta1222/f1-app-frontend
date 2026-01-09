@@ -292,7 +292,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - 🟢 FORCED COLORS via style */}
+          {/* Modal Content - Forced Colors & Spacing */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
@@ -313,7 +313,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               <X className="w-5 h-5" />
             </button>
 
-            {/* Header - 🟢 IMPROVED ALIGNMENT: items-start + Taller Strip */}
+            {/* Header */}
             <div className="flex items-start gap-4 mb-8 pr-12">
               <div 
                 className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" 
@@ -338,7 +338,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                 </div>
             </div>
 
-            {/* Analysis List - 🟢 IMPROVED LIST ALIGNMENT */}
+            {/* Analysis List */}
             <div>
                 <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
                   <TrendingUp className="w-4 h-4"/> AI Analysis
@@ -346,14 +346,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                 <ul className="space-y-4">
                     {selectedDriver.reasons.positive.map((r, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
-                            <span className="text-green-500 text-lg leading-none mt-0.5">●</span> 
-                            {/* Inherits forced color */}
+                            {/* 🟢 FIXED: Bullet is now a div shape for perfect alignment */}
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
                             <span>{r}</span>
                         </li>
                     ))}
                     {selectedDriver.reasons.positive.length === 0 && (
                           <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                            <span className="text-gray-500 text-lg leading-none mt-0.5">●</span> 
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                             <span>Standard performance expected based on current form.</span>
                         </li>
                     )}
