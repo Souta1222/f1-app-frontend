@@ -292,7 +292,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - 🟢 ADDED p-8 and pr-12 */}
+          {/* Modal Content - 🟢 FORCED COLORS via style */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
@@ -313,17 +313,22 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               <X className="w-5 h-5" />
             </button>
 
-            {/* Header - 🟢 Added pr-12 for spacing near close button */}
-            <div className="flex items-center gap-3 mb-6 pr-12">
-              <div className="w-1.5 h-8 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></div>
-              <div>
-                <h2 className="text-2xl font-bold leading-none">{selectedDriver.driverName}</h2>
-                <span className={`text-sm font-bold uppercase tracking-wider ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>{selectedDriver.team}</span>
+            {/* Header - 🟢 IMPROVED ALIGNMENT: items-start + Taller Strip */}
+            <div className="flex items-start gap-4 mb-8 pr-12">
+              <div 
+                className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" 
+                style={{ backgroundColor: getTeamColor(selectedDriver.team) }}
+              />
+              <div className="flex flex-col">
+                <h2 className="text-3xl font-bold leading-tight tracking-tight">{selectedDriver.driverName}</h2>
+                <span className={`text-sm font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                    {selectedDriver.team}
+                </span>
               </div>
             </div>
 
             {/* Stats Card */}
-            <div className={`p-6 rounded-xl border mb-6 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+            <div className={`p-6 rounded-xl border mb-8 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                 <div className="flex justify-between items-end mb-3">
                     <span className={`text-xs font-bold uppercase ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Win Probability</span>
                     <span className="text-3xl font-black text-green-600 font-mono tracking-tight">{selectedDriver.probability}</span>
@@ -333,23 +338,23 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                 </div>
             </div>
 
-            {/* Analysis List */}
+            {/* Analysis List - 🟢 IMPROVED LIST ALIGNMENT */}
             <div>
-                <div className="flex items-center gap-2 text-green-600 mb-3 font-bold text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
                   <TrendingUp className="w-4 h-4"/> AI Analysis
                 </div>
-                <ul className="space-y-3 pl-1">
+                <ul className="space-y-4">
                     {selectedDriver.reasons.positive.map((r, i) => (
-                        <li key={i} className="flex gap-3 text-sm leading-relaxed">
-                            <span className="text-green-500 mt-1">●</span> 
-                            {/* Explicitly inherits forced color */}
+                        <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
+                            <span className="text-green-500 text-lg leading-none mt-0.5">●</span> 
+                            {/* Inherits forced color */}
                             <span>{r}</span>
                         </li>
                     ))}
                     {selectedDriver.reasons.positive.length === 0 && (
-                          <li className={`flex gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                            <span className="text-gray-500 mt-1">●</span> 
-                            Standard performance expected based on current form.
+                          <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                            <span className="text-gray-500 text-lg leading-none mt-0.5">●</span> 
+                            <span>Standard performance expected based on current form.</span>
                         </li>
                     )}
                 </ul>
