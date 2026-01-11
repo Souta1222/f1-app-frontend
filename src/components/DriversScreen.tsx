@@ -21,7 +21,7 @@ interface DriverStats {
 }
 
 interface APIDriver {
-  id: string;
+  id: string; // Now "VER", "NOR", etc.
   name: string;
   team: string;
   country: string;
@@ -90,6 +90,7 @@ export function DriversScreen() {
     });
   }, [apiDrivers, searchQuery, selectedTeam]);
 
+  // 🟢 FIXED: Match based on 3-letter ID returned from API
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -109,17 +110,15 @@ export function DriversScreen() {
         const data = await response.json();
 
         if (data.success && data.driver_id) {
-          // Normalize IDs to handle potential mismatches (e.g. "lando-norris" vs "lando norris")
-          const searchId = data.driver_id.toLowerCase().replace(' ', '-');
-          
-          // Match against API data
-          const found = apiDrivers.find(d => d.id === searchId || d.name.toLowerCase().replace(' ', '-') === searchId);
+          // data.driver_id is now "VER", "NOR" etc.
+          // apiDrivers IDs are now "VER", "NOR" etc.
+          const found = apiDrivers.find(d => d.id === data.driver_id);
 
           if (found) {
              setSelectedDriver(found);
              alert(`✅ Match found: ${found.name} (${data.confidence})`);
           } else {
-             alert(`⚠️ Identified "${data.driver_id}" but stats are missing in your prediction engine.`);
+             alert(`⚠️ Identified "${data.driver_id}" but stats are missing in your engine.`);
           }
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
@@ -132,6 +131,7 @@ export function DriversScreen() {
     }
   };
 
+  // ... rest of the component (Chat, Render, etc.) ...
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
     setChatMessages(prev => [...prev, { role: 'user', content: inputMessage }]);
@@ -200,6 +200,7 @@ export function DriversScreen() {
                 {filteredDrivers.map((driver) => (
                 <div key={driver.id} onClick={() => setSelectedDriver(driver)} className={`cursor-pointer rounded-xl border overflow-hidden transition-all active:scale-[0.98] ${isDark ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-600' : 'bg-white border-white shadow-sm hover:shadow-md hover:border-red-100'}`}>
                     <div className={`relative aspect-[4/3] ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                        {/* 🟢 FIXED: Image src now uses the 3-letter ID (e.g. /drivers/VER.png) */}
                         <ImageWithFallback src={`/drivers/${driver.id}.png`} alt={driver.name} className="w-full h-full object-cover object-top" />
                         <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: getTeamColor(driver.team) }} />
                     </div>
@@ -220,7 +221,6 @@ export function DriversScreen() {
         )}
       </div>
 
-      {/* --- DETAILS DIALOG --- */}
       <Dialog open={uploadDialogOpen || !!selectedDriver} onOpenChange={(open) => { if (!open) { setUploadDialogOpen(false); setSelectedDriver(null); setUploadedImage(null); }}}>
         <DialogContent className={`max-w-[90vw] max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isDark ? '!bg-neutral-900 border-neutral-800 text-white' : '!bg-white border-slate-200 text-slate-900'}`} style={{ backgroundColor: isDark ? '#171717' : '#ffffff' }}>
           <DialogHeader>
