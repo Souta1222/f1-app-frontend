@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Camera, Upload, X, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Camera, Upload, X, Sparkles, Trophy, BarChart3 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
-import { drivers } from '../lib/data';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
@@ -14,9 +13,25 @@ import logo from '../styles/logo.png';
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-const teams = [
+// --- TYPES ---
+interface DriverStats {
+  win_probability: string;
+  podium_probability: string;
+  points_probability: string;
+  average_position: number;
+}
+
+interface APIDriver {
+  id: string;
+  name: string;
+  team: string;
+  country: string;
+  stats: DriverStats;
+}
+
+const teamsList = [
   { name: 'All Teams', value: 'all', color: '#FFFFFF' },
-  { name: 'Red Bull', value: 'Red Bull Racing', color: '#3671C6' },
+  { name: 'Red Bull', value: 'Red Bull', color: '#3671C6' },
   { name: 'Ferrari', value: 'Ferrari', color: '#E8002D' },
   { name: 'Mercedes', value: 'Mercedes', color: '#27F4D2' },
   { name: 'McLaren', value: 'McLaren', color: '#FF8000' },
@@ -24,9 +39,15 @@ const teams = [
   { name: 'Alpine', value: 'Alpine', color: '#FF87BC' },
   { name: 'Williams', value: 'Williams', color: '#64C4FF' },
   { name: 'RB', value: 'RB', color: '#6692FF' },
-  { name: 'Haas', value: 'Haas F1 Team', color: '#B6BABD' },
-  { name: 'Sauber', value: 'Kick Sauber', color: '#52E252' },
+  { name: 'Haas', value: 'Haas', color: '#B6BABD' },
+  { name: 'Sauber', value: 'Sauber', color: '#52E252' },
 ];
+
+// Helper to get color by team name string
+const getTeamColor = (teamName: string) => {
+    const found = teamsList.find(t => teamName.includes(t.value) && t.value !== 'all');
+    return found ? found.color : '#666666';
+};
 
 export function DriversScreen() {
   const { theme } = useTheme();
@@ -35,25 +56,48 @@ export function DriversScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  
+  // Data State
+  const [apiDrivers, setApiDrivers] = useState<APIDriver[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Selection State
+  const [selectedDriver, setSelectedDriver] = useState<APIDriver | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [inputMessage, setInputMessage] = useState('');
 
-  const driversList = Object.values(drivers);
+  // 🟢 FETCH DATA FROM PREDICTION ENGINE
+  useEffect(() => {
+    const fetchDrivers = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/drivers`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setApiDrivers(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch drivers:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchDrivers();
+  }, []);
 
   const filteredDrivers = useMemo(() => {
-    return driversList.filter((driver) => {
+    return apiDrivers.filter((driver) => {
       const matchesSearch = driver.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        driver.nationality.toLowerCase().includes(searchQuery.toLowerCase());
+        driver.team.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesTeam = selectedTeam === 'all' || driver.team === selectedTeam;
+      const matchesTeam = selectedTeam === 'all' || driver.team.includes(selectedTeam);
       
       return matchesSearch && matchesTeam;
     });
-  }, [driversList, searchQuery, selectedTeam]);
+  }, [apiDrivers, searchQuery, selectedTeam]);
 
   // Upload Logic
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,11 +123,17 @@ export function DriversScreen() {
         const data = await response.json();
 
         if (data.success && data.driver_id) {
-          if (drivers[data.driver_id]) {
-             setSelectedDriver(data.driver_id);
-             alert(`✅ Match found: ${drivers[data.driver_id].name} (${data.confidence})`);
+          // Find the driver in our API list
+          const found = apiDrivers.find(d => 
+              d.name.toUpperCase().includes(data.driver_id.toUpperCase()) || 
+              d.id.toUpperCase().includes(data.driver_id.toUpperCase())
+          );
+
+          if (found) {
+             setSelectedDriver(found);
+             alert(`✅ Match found: ${found.name} (${data.confidence})`);
           } else {
-             alert(`⚠️ AI identified "${data.driver_id}", but this driver is not in your app's data list.`);
+             alert(`⚠️ AI identified "${data.driver_id}", but matching prediction data was not found.`);
           }
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
@@ -95,8 +145,6 @@ export function DriversScreen() {
       }
     }
   };
-
-  const selectedDriverData = selectedDriver ? drivers[selectedDriver] : null;
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -122,13 +170,12 @@ export function DriversScreen() {
       className="min-h-screen pb-24 font-sans w-full transition-colors duration-300"
       style={containerStyle}
     >
-      {/* 🟢 FIXED HEADER: "fixed" keeps it pinned to viewport top */}
+      {/* 🟢 FIXED HEADER */}
       <div 
         className="fixed top-0 left-0 right-0 z-50 px-6 pt-12 pb-6 shadow-lg flex justify-between items-center transition-colors duration-300"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
       >
         <div>
-           {/* Logo Integration */}
            <div className="flex items-center gap-2 mt-6">
                <img src={logo} alt="F1INSIDER" className="h-8 w-auto" />
            </div>
@@ -139,14 +186,14 @@ export function DriversScreen() {
         </div>
       </div>
 
-      {/* 🟢 PADDING FOR CONTENT: Pushes content down so it's not hidden behind fixed header */}
+      {/* 🟢 CONTENT */}
       <div className="pt-32 px-4"> 
       
         {/* Title Badge */}
         <div className="mb-8 pl-2">
             <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
             <h1 className="text-[10px] uppercase tracking-widest opacity-80">
-                2025 SEASON GRID
+                2025 SEASON PREDICTIONS
             </h1>
             </div>
         </div>
@@ -168,7 +215,7 @@ export function DriversScreen() {
                 <div className="flex-1">
                     <h3 className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Identify Driver AI</h3>
                     <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                        Upload a photo to instantly see stats & predictions
+                        Upload a photo to see 2025 predictions
                     </p>
                 </div>
             </div>
@@ -194,7 +241,7 @@ export function DriversScreen() {
         {/* Team Filters */}
         <div className="mb-6">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {teams.map((team) => (
+            {teamsList.map((team) => (
                 <button
                 key={team.value}
                 onClick={() => setSelectedTeam(team.value)}
@@ -219,80 +266,107 @@ export function DriversScreen() {
         </div>
 
         {/* Driver Grid */}
-        <div className="grid grid-cols-2 gap-3">
-            {filteredDrivers.map((driver) => (
-            <div
-                key={driver.id}
-                className={`rounded-xl border overflow-hidden transition-all ${
-                    isDark 
-                    ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
-                    : 'bg-white border-white shadow-sm hover:shadow-md hover:border-red-100'
-                }`}
-            >
-                <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
-                <ImageWithFallback
-                    src={`/drivers/${driver.id}.png`} 
-                    alt={driver.name}
-                    className="w-full h-full object-cover object-top"
-                />
-                <div className="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
-                    <span className="text-white font-bold text-xs">{driver.number}</span>
-                </div>
-                </div>
+        {loading ? (
+             <div className="text-center py-20 animate-pulse">
+                 <div className="text-4xl mb-4">🏎️</div>
+                 <p className={isDark ? "text-neutral-500" : "text-slate-400"}>Simulating 2025 Season...</p>
+             </div>
+        ) : (
+            <div className="grid grid-cols-2 gap-3">
+                {filteredDrivers.map((driver) => (
+                <div
+                    key={driver.id}
+                    onClick={() => setSelectedDriver(driver)}
+                    className={`cursor-pointer rounded-xl border overflow-hidden transition-all active:scale-[0.98] ${
+                        isDark 
+                        ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-600' 
+                        : 'bg-white border-white shadow-sm hover:shadow-md hover:border-red-100'
+                    }`}
+                >
+                    <div className={`relative aspect-[4/3] ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                        <ImageWithFallback
+                            src={`/drivers/${driver.id}.png`} 
+                            alt={driver.name}
+                            className="w-full h-full object-cover object-top"
+                        />
+                        <div 
+                            className="absolute bottom-0 left-0 right-0 h-1" 
+                            style={{ backgroundColor: getTeamColor(driver.team) }}
+                        />
+                    </div>
 
-                <div className="p-3">
-                <div className="mb-1">
-                    <h3 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {driver.name}
-                    </h3>
+                    <div className="p-3">
+                        <div className="mb-2">
+                            <h3 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {driver.name}
+                            </h3>
+                            <p className={`text-[10px] truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
+                                {driver.team}
+                            </p>
+                        </div>
+
+                        {/* 🟢 NEW: PREDICTION STATS GRID */}
+                        <div className={`grid grid-cols-3 gap-1 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                            <div className="text-center">
+                                <div className="text-[9px] font-bold text-yellow-500 uppercase">Win</div>
+                                <div className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {driver.stats.win_probability}
+                                </div>
+                            </div>
+                            <div className="text-center border-l border-r border-dashed border-white/10">
+                                <div className="text-[9px] font-bold text-green-500 uppercase">Podium</div>
+                                <div className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {driver.stats.podium_probability}
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-[9px] font-bold text-blue-500 uppercase">Points</div>
+                                <div className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {driver.stats.points_probability}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div
-                    className="w-1 h-3 rounded-full"
-                    style={{ backgroundColor: driver.teamColor }}
-                    />
-                    <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
-                        {driver.team}
-                    </span>
-                </div>
-                </div>
+                ))}
             </div>
-            ))}
-        </div>
+        )}
 
-        {filteredDrivers.length === 0 && (
+        {!loading && filteredDrivers.length === 0 && (
             <div className="text-center py-12">
             <p className={isDark ? "text-neutral-500" : "text-slate-400"}>No drivers found</p>
             </div>
         )}
       </div>
 
-      {/* --- DIALOGS (Keep Dark Theme) --- */}
-      
-    {/* --- UPLOAD DIALOG (Fixed Mobile Close Button) --- */}
-    <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+      {/* --- UPLOAD/DETAILS DIALOG --- */}
+      <Dialog open={uploadDialogOpen || !!selectedDriver} onOpenChange={(open) => {
+          if (!open) {
+              setUploadDialogOpen(false);
+              setSelectedDriver(null);
+              setUploadedImage(null);
+          }
+      }}>
         <DialogContent 
-            className={`max-w-[90vw] max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl transition-colors duration-300 z-50 ${
+            className={`max-w-[90vw] max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${
                 isDark 
                 ? '!bg-neutral-900 border-neutral-800 text-white' 
                 : '!bg-white border-slate-200 text-slate-900'
             }`}
-            style={{ 
-                backgroundColor: isDark ? '#171717' : '#ffffff',
-                opacity: 1 
-            }}
+            style={{ backgroundColor: isDark ? '#171717' : '#ffffff' }}
         >
           <DialogHeader>
             <DialogTitle className={isDark ? 'text-white' : 'text-slate-900'}>
-                Identify Driver AI
+               {selectedDriver ? 'Driver Profile' : 'Identify Driver'}
             </DialogTitle>
             <DialogDescription className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
-              Upload a photo to identify the driver.
+               {selectedDriver ? '2025 Season Forecast' : 'Upload a photo to predict results'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {!uploadedImage ? (
+            {/* 1. UPLOAD STATE (Only if no driver selected) */}
+            {!selectedDriver && !uploadedImage && (
               <label 
                 className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
                     isDark 
@@ -303,97 +377,87 @@ export function DriversScreen() {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className={`w-10 h-10 mb-3 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`} />
                   <p className={`mb-2 text-sm ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-                    Tap to upload
+                    Tap to upload driver photo
                   </p>
                 </div>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
-            ) : (
-              <div className="space-y-4">
-                {/* Big Image Preview */}
+            )}
+
+            {/* 2. PREVIEW STATE (Image uploaded but not identified yet/processing) */}
+            {!selectedDriver && uploadedImage && (
                 <div className="relative w-full h-72">
-                  <img 
-                    src={uploadedImage} 
-                    alt="Uploaded" 
-                    className="w-full h-full object-cover object-top rounded-xl shadow-md" 
-                  />
-                  
-                  {/* 👇 FIXED BUTTON: High Contrast & Z-Index for Mobile Visibility */}
-                  <button 
-                    onClick={() => { setUploadedImage(null); setSelectedDriver(null); }} 
-                    className="absolute top-2 right-2 z-10 w-9 h-9 bg-black/70 rounded-full flex items-center justify-center text-white hover:bg-black/90 backdrop-blur-md border border-white/30 shadow-xl transition-transform active:scale-90"
-                    aria-label="Close Preview"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {selectedDriverData && (
-                  <div className={`rounded-xl p-4 border transition-colors shadow-lg mt-2 ${
-                      isDark 
-                      ? 'bg-neutral-950 border-neutral-800' 
-                      : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    {/* Driver Header */}
-                    <div className="flex items-center gap-4 mb-4">
-                      {/* Team Color Strip (Fixed width) */}
-                      <div 
-                        className="w-2 h-12 rounded-full shadow-sm flex-shrink-0" 
-                        style={{ backgroundColor: selectedDriverData.teamColor }} 
-                      />
-                      
-                      <div>
-                        <h3 className={`font-black text-lg italic tracking-tight leading-none ${
-                            isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                            {selectedDriverData.name.toUpperCase()}
-                        </h3>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                            {selectedDriverData.team}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Stats Grid */}
-                    <div className={`grid grid-cols-4 gap-2 pt-3 border-t mb-4 ${
-                        isDark ? 'border-neutral-800' : 'border-slate-200'
-                    }`}>
-                        {selectedDriverData.stats && Object.entries(selectedDriverData.stats).map(([key, val]) => (
-                            <div key={key} className="text-center">
-                                <div className={`font-bold text-lg leading-none ${
-                                    isDark ? 'text-white' : 'text-slate-900'
-                                }`}>
-                                    {val}
-                                </div>
-                                <div className={`text-[9px] uppercase mt-1 ${
-                                    isDark ? 'text-neutral-500' : 'text-slate-400'
-                                }`}>
-                                    {key}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <Button
-                        onClick={() => {
-                            setSearchQuery(selectedDriverData.name); 
-                            setUploadDialogOpen(false);
-                            setUploadedImage(null);
-                            setSelectedDriver(null);
-                        }}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md"
-                    >
-                        View Full Profile
-                    </Button>
-
+                  <img src={uploadedImage} alt="Uploaded" className="w-full h-full object-cover rounded-xl" />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="animate-spin text-4xl">🏎️</div>
                   </div>
-                )}
-              </div>
+                </div>
+            )}
+
+            {/* 3. PROFILE STATE (Driver Selected/Identified) */}
+            {selectedDriver && (
+                <div>
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                            <ImageWithFallback 
+                                src={`/drivers/${selectedDriver.id}.png`} 
+                                alt={selectedDriver.name}
+                                className="w-full h-full object-cover object-top"
+                            />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black italic uppercase leading-none">{selectedDriver.name}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getTeamColor(selectedDriver.team) }}></span>
+                                <span className={`text-sm font-bold ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>{selectedDriver.team}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BIG STATS */}
+                    <div className={`grid grid-cols-2 gap-3 mb-4`}>
+                        <div className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                                <Trophy className="w-4 h-4 text-yellow-500" />
+                                <span className="text-xs font-bold uppercase opacity-70">Win Prob</span>
+                            </div>
+                            <div className="text-2xl font-black text-yellow-500">{selectedDriver.stats.win_probability}</div>
+                        </div>
+                        <div className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                                <BarChart3 className="w-4 h-4 text-green-500" />
+                                <span className="text-xs font-bold uppercase opacity-70">Podium</span>
+                            </div>
+                            <div className="text-2xl font-black text-green-500">{selectedDriver.stats.podium_probability}</div>
+                        </div>
+                    </div>
+
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-200'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-bold">Predicted Avg. Position</span>
+                            <span className="text-xl font-mono font-bold">{selectedDriver.stats.average_position}</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div 
+                                className="bg-red-600 h-2 rounded-full" 
+                                style={{ width: `${Math.max(5, (21 - selectedDriver.stats.average_position) * 5)}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    <Button 
+                        onClick={() => setSelectedDriver(null)}
+                        className="w-full mt-4 bg-transparent border border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    >
+                        Close Profile
+                    </Button>
+                </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* CHAT BUTTON */}
       <button
         onClick={() => setChatOpen(true)}
         className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/50 hover:scale-110 transition-transform z-50"
@@ -401,6 +465,7 @@ export function DriversScreen() {
         <Sparkles className="w-6 h-6 text-white" />
       </button>
 
+      {/* CHAT SHEET */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
         <SheetContent side="bottom" className="bg-neutral-900/95 border-t-2 border-red-600 text-white h-[85vh] rounded-t-3xl p-0">
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-800">
