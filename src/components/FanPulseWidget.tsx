@@ -30,8 +30,8 @@ export function FanPulseWidget() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const [ratings, setRatings] = useState<RatingData[]>([]);     // Drivers
-  const [teamRatings, setTeamRatings] = useState<RatingData[]>([]); // Teams
+  const [ratings, setRatings] = useState<RatingData[]>([]);     
+  const [teamRatings, setTeamRatings] = useState<RatingData[]>([]); 
   
   // Rating State
   const [selectedEntity, setSelectedEntity] = useState<string>(""); 
@@ -41,14 +41,14 @@ export function FanPulseWidget() {
   const [userComment, setUserComment] = useState("");
   const [userName, setUserName] = useState("");
 
-  // 🟢 NEW: View All State
+  // View All State
   const [viewAllType, setViewAllType] = useState<'driver' | 'team' | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
 
-  // 🟢 FETCH DATA
+  // FETCH DATA
   const fetchData = async () => {
     try {
       const res = await fetch(`${API_BASE}/community/ratings?t=${Date.now()}`, {
@@ -62,13 +62,11 @@ export function FanPulseWidget() {
       if (res.ok) {
         const allData: RatingData[] = await res.json();
         
-        // Filter Logic
         const knownTeamNames = allTeamsList.map(t => t.name.toLowerCase());
         const teamsData: RatingData[] = [];
         const driversData: RatingData[] = [];
 
         allData.forEach(d => {
-            // Fuzzy match for teams to catch slight variations
             if (knownTeamNames.some(name => d.driver_name.toLowerCase().includes(name))) {
                 teamsData.push(d);
             } else {
@@ -76,7 +74,6 @@ export function FanPulseWidget() {
             }
         });
 
-        // Sort by avg rating first, then votes
         const sorter = (a: RatingData, b: RatingData) => b.avg_rating - a.avg_rating || b.total_votes - a.total_votes;
         
         driversData.sort(sorter);
@@ -125,9 +122,9 @@ export function FanPulseWidget() {
 
   return (
     <>
-      {/* BACKGROUND BLUR */}
+      {/* 🟢 FIXED: BACKGROUND BLUR (z-[9990]) */}
       {(isRatingOpen || viewAllType) && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-all duration-300" />
+        <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-sm transition-all duration-300" />
       )}
       
       <div className={`transition-all duration-300 ${(isRatingOpen || viewAllType) ? 'blur-sm' : ''}`}>
@@ -230,9 +227,9 @@ export function FanPulseWidget() {
         </div>
       </div>
 
-    {/* --- 🟢 VIEW ALL MODAL (FULL LEADERBOARD) --- */}
+    {/* --- 🟢 VIEW ALL MODAL (FIXED Z-INDEX: z-[9999]) --- */}
     {viewAllType && (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
         <div className={`relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800`}>
             {/* Header */}
             <div className="p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900/50 rounded-t-2xl">
@@ -323,9 +320,9 @@ export function FanPulseWidget() {
       </div>
     )}
 
-    {/* --- RATING MODAL (UNCHANGED) --- */}
+    {/* --- 🟢 RATING MODAL (FIXED Z-INDEX: z-[9999]) --- */}
     {isRatingOpen && (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 animate-in fade-in duration-300">
         <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200 dark:border-neutral-800 w-full max-w-md`}>
           <div className={SPACING.CARD_GAP}>
             <div className={`${SPACING.BORDER_RADIUS} shadow-2xl relative animate-in zoom-in-95 fade-in duration-300 bg-gray-100 dark:bg-neutral-900`}>
