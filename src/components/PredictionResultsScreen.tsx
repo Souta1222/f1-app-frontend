@@ -397,4 +397,4 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
       )}
     </>
   );
-}z
+}
