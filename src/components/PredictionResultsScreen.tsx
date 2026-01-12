@@ -84,7 +84,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const formattedResults: PredictionCard[] = backendList.map((item: any) => {
             const winVal = parseFloat(item.probability);
             
-            // Fallback estimation if backend sends 0 or null for these fields
+            // Fallback estimation if backend sends 0 or null
             let podiumVal = item.podium_probability 
                 ? parseFloat(item.podium_probability) 
                 : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
@@ -312,9 +312,9 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content */}
+          {/* Modal Content - FIXED PADDING */}
           <div 
-            className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 border ${
+            className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 pt-14 pb-10 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
             }`}
             style={{ 
