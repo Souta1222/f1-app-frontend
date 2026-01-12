@@ -269,24 +269,33 @@ export function FanPulseWidget() {
         >
           {/* Solid Dark Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop" 
+            className="absolute inset-0 bg-gray-900/95 dark:bg-black/95 modal-backdrop" 
             onClick={() => {
               setViewAllType(null);
               setExpandedItem(null);
             }}
           />
           
-          {/* Modal Container - SOLID BACKGROUND */}
+          {/* Modal Container - COMPLETELY SOLID BACKGROUND */}
           <div 
-            className="relative z-[10000] w-full max-w-lg h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border-2 border-gray-300 dark:border-neutral-700 overflow-hidden modal-content"
+            className="relative z-[10000] w-full max-w-lg h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden modal-content"
+            style={{
+              backgroundColor: isDark ? '#171717' : '#ffffff'
+            }}
           >
             {/* Fixed Header - SOLID BACKGROUND */}
-            <div className="flex-shrink-0 p-5 border-b border-gray-300 dark:border-neutral-700 flex justify-between items-center bg-white dark:bg-neutral-900 rounded-t-2xl">
+            <div 
+              className="flex-shrink-0 p-5 border-b flex justify-between items-center rounded-t-2xl"
+              style={{
+                backgroundColor: isDark ? '#262626' : '#f9fafb',
+                borderColor: isDark ? '#404040' : '#e5e7eb'
+              }}
+            >
               <div>
-                <h3 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight">
+                <h3 className="text-xl font-black uppercase tracking-tight" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                   {viewAllType === 'driver' ? 'Driver Standings' : 'Team Standings'}
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                <p className="text-xs font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                   Based on community votes
                 </p>
               </div>
@@ -295,75 +304,134 @@ export function FanPulseWidget() {
                   setViewAllType(null); 
                   setExpandedItem(null); 
                 }}
-                className="bg-gray-100 dark:bg-neutral-800 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors border border-gray-300 dark:border-neutral-600"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                style={{
+                  backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                  borderColor: isDark ? '#4b5563' : '#d1d5db'
+                }}
               >
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                <X className="w-5 h-5" style={{ color: isDark ? '#d1d5db' : '#4b5563' }} />
               </button>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto modal-scroll-fix bg-white dark:bg-neutral-900">
+            {/* Scrollable Content Area - SOLID BACKGROUND */}
+            <div 
+              className="flex-1 overflow-y-auto modal-scroll-fix"
+              style={{
+                backgroundColor: isDark ? '#171717' : '#ffffff'
+              }}
+            >
               <div className="p-4 space-y-3">
                 {(viewAllType === 'driver' ? ratings : teamRatings).map((item, idx) => (
-                  <div key={item.driver_name} className="overflow-hidden rounded-xl border border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 shadow-sm transition-all">
+                  <div 
+                    key={item.driver_name} 
+                    className="overflow-hidden rounded-xl border shadow-sm transition-all"
+                    style={{
+                      backgroundColor: isDark ? '#262626' : '#f9fafb',
+                      borderColor: isDark ? '#404040' : '#e5e7eb'
+                    }}
+                  >
                     {/* Main Row */}
                     <button 
                       onClick={() => setExpandedItem(expandedItem === item.driver_name ? null : item.driver_name)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors text-left bg-white dark:bg-neutral-800"
+                      className="w-full flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                      style={{
+                        backgroundColor: isDark ? '#262626' : '#ffffff'
+                      }}
                     >
                       <div className="flex items-center gap-4">
-                        <span className={`font-black text-xl w-8 text-center ${idx < 3 ? 'text-yellow-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <span 
+                          className="font-black text-xl w-8 text-center"
+                          style={{ color: idx < 3 ? '#f59e0b' : (isDark ? '#9ca3af' : '#6b7280') }}
+                        >
                           #{idx + 1}
                         </span>
                         <div>
-                          <div className="font-bold text-neutral-900 dark:text-white text-base">
+                          <div className="font-bold text-base" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                             {item.driver_name}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1">
+                          <div className="text-xs font-medium flex items-center gap-1" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                             {item.total_votes} ratings • Click to see comments
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className={`px-3 py-1 rounded-lg font-black text-lg ${
-                          item.avg_rating >= 9 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                          item.avg_rating >= 7 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                          'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                        }`}>
+                        <div className="px-3 py-1 rounded-lg font-black text-lg" style={{
+                          backgroundColor: item.avg_rating >= 9 
+                            ? (isDark ? '#065f46' : '#d1fae5') 
+                            : item.avg_rating >= 7 
+                            ? (isDark ? '#1e40af' : '#dbeafe') 
+                            : (isDark ? '#7f1d1d' : '#fee2e2'),
+                          color: item.avg_rating >= 9 
+                            ? (isDark ? '#34d399' : '#065f46') 
+                            : item.avg_rating >= 7 
+                            ? (isDark ? '#60a5fa' : '#1e40af') 
+                            : (isDark ? '#f87171' : '#7f1d1d')
+                        }}>
                           {item.avg_rating.toFixed(1)}
                         </div>
-                        <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${expandedItem === item.driver_name ? 'rotate-180' : ''}`} />
+                        <ChevronDown 
+                          className={`w-5 h-5 transition-transform ${expandedItem === item.driver_name ? 'rotate-180' : ''}`} 
+                          style={{ color: isDark ? '#9ca3af' : '#6b7280' }}
+                        />
                       </div>
                     </button>
 
                     {/* Expanded Comments Section - SOLID BACKGROUND */}
                     {expandedItem === item.driver_name && (
-                      <div className="bg-gray-50 dark:bg-neutral-800 border-t border-gray-300 dark:border-neutral-700 p-4">
-                        <div className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+                      <div 
+                        className="border-t p-4"
+                        style={{
+                          backgroundColor: isDark ? '#1f2937' : '#f9fafb',
+                          borderColor: isDark ? '#374151' : '#e5e7eb'
+                        }}
+                      >
+                        <div className="text-xs font-bold uppercase mb-3 flex items-center gap-1" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                           <MessageSquare className="w-3 h-3" /> Recent Feedback
                         </div>
                         <div className="space-y-3">
                           {item.latest_comments && item.latest_comments.length > 0 ? (
                             item.latest_comments.slice().reverse().map((comment, cIdx) => (
-                              <div key={cIdx} className="bg-white dark:bg-neutral-900 p-3 rounded-lg border border-gray-200 dark:border-neutral-700">
+                              <div 
+                                key={cIdx} 
+                                className="p-3 rounded-lg border"
+                                style={{
+                                  backgroundColor: isDark ? '#111827' : '#ffffff',
+                                  borderColor: isDark ? '#374151' : '#e5e7eb'
+                                }}
+                              >
                                 <div className="flex justify-between items-start mb-1">
-                                  <span className="font-bold text-xs text-neutral-900 dark:text-white flex items-center gap-1">
-                                    <User className="w-3 h-3 text-gray-400" /> {comment.user}
+                                  <span className="font-bold text-xs flex items-center gap-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+                                    <User className="w-3 h-3" style={{ color: '#9ca3af' }} /> {comment.user}
                                   </span>
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                    comment.rating >= 8 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 
-                                    comment.rating >= 6 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                                    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                                  }`}>
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{
+                                    backgroundColor: comment.rating >= 8 
+                                      ? (isDark ? '#065f46' : '#d1fae5') 
+                                      : comment.rating >= 6 
+                                      ? (isDark ? '#854d0e' : '#fef3c7') 
+                                      : (isDark ? '#7f1d1d' : '#fee2e2'),
+                                    color: comment.rating >= 8 
+                                      ? (isDark ? '#34d399' : '#065f46') 
+                                      : comment.rating >= 6 
+                                      ? (isDark ? '#fbbf24' : '#854d0e') 
+                                      : (isDark ? '#f87171' : '#7f1d1d')
+                                  }}>
                                     {comment.rating}/10
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 italic">"{comment.text}"</p>
-                                <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-right">{comment.date}</div>
+                                <p className="text-sm italic" style={{ color: isDark ? '#d1d5db' : '#4b5563' }}>"{comment.text}"</p>
+                                <div className="text-[10px] mt-2 text-right" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{comment.date}</div>
                               </div>
                             ))
                           ) : (
-                            <div className="text-center text-sm text-gray-500 dark:text-gray-400 italic py-2 bg-white dark:bg-neutral-900 p-3 rounded-lg border border-gray-200 dark:border-neutral-700">
+                            <div 
+                              className="text-center text-sm italic py-2 p-3 rounded-lg border"
+                              style={{
+                                backgroundColor: isDark ? '#111827' : '#ffffff',
+                                borderColor: isDark ? '#374151' : '#e5e7eb',
+                                color: isDark ? '#9ca3af' : '#6b7280'
+                              }}
+                            >
                               No comments yet.
                             </div>
                           )}
@@ -379,7 +447,7 @@ export function FanPulseWidget() {
         document.body
       )}
 
-      {/* --- 🟢 RATING MODAL (SOLID BACKGROUND) --- */}
+      {/* --- 🟢 RATING MODAL (COMPLETELY SOLID BACKGROUND) --- */}
       {mounted && isRatingOpen && createPortal(
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
@@ -393,40 +461,68 @@ export function FanPulseWidget() {
           }}
           data-modal="true"
         >
-          {/* Solid Dark Backdrop */}
+          {/* Solid Dark Backdrop - NO TRANSPARENCY */}
           <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop" 
+            className="absolute inset-0 bg-gray-900 dark:bg-black modal-backdrop" 
+            style={{ opacity: 0.95 }}
             onClick={() => setIsRatingOpen(false)} 
           />
           
           <div className="relative z-[10000] w-full max-w-md max-h-[90vh] overflow-y-auto modal-scroll-fix">
-            <div className={`${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-gray-300 dark:border-neutral-700`}>
+            <div className={`${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH}`} style={{ 
+              backgroundColor: isDark ? '#262626' : '#e5e7eb',
+              borderColor: isDark ? '#404040' : '#d1d5db'
+            }}>
               <div className={SPACING.CARD_GAP}>
                 {/* MAIN RATING MODAL CARD - SOLID BACKGROUND */}
-                <div className={`${SPACING.BORDER_RADIUS} shadow-2xl relative bg-white dark:bg-neutral-900`}>
+                <div 
+                  className={`${SPACING.BORDER_RADIUS} shadow-2xl relative`}
+                  style={{ 
+                    backgroundColor: isDark ? '#171717' : '#ffffff'
+                  }}
+                >
                   <div className={SPACING.CARD_PADDING}>
                     <button 
                       onClick={() => setIsRatingOpen(false)}
-                      className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white bg-gray-100 dark:bg-neutral-800 p-1 rounded-full z-10 border border-gray-300 dark:border-neutral-700"
+                      className="absolute top-4 right-4 p-1 rounded-full z-10"
+                      style={{ 
+                        backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                        borderColor: isDark ? '#4b5563' : '#d1d5db',
+                        color: isDark ? '#d1d5db' : '#4b5563'
+                      }}
                     >
                       <X className="w-5 h-5" />
                     </button>
 
-                    <h3 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-1">
+                    <h3 className="text-xl font-black uppercase tracking-tight mb-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                       Rate {ratingType === 'driver' ? 'Driver' : 'Team'}
                     </h3>
                     
                     {/* Type Toggle - SOLID BACKGROUND */}
-                    <div className="flex bg-gray-100 dark:bg-neutral-800 rounded-xl p-1 mb-6 border border-gray-300 dark:border-neutral-700">
+                    <div 
+                      className="flex rounded-xl p-1 mb-6"
+                      style={{ 
+                        backgroundColor: isDark ? '#262626' : '#f3f4f6',
+                        borderColor: isDark ? '#404040' : '#d1d5db'
+                      }}
+                    >
                       <button 
                         onClick={() => { setRatingType('driver'); setSelectedEntity(allDriversList[0].name); }} 
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors border ${ratingType === 'driver' ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-neutral-400 border-transparent'}`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${ratingType === 'driver' ? 'text-white' : ''}`}
+                        style={{ 
+                          backgroundColor: ratingType === 'driver' ? '#dc2626' : 'transparent',
+                          color: ratingType === 'driver' ? '#ffffff' : (isDark ? '#9ca3af' : '#4b5563')
+                        }}
                       >
                         Driver
                       </button>
                       <button 
                         onClick={() => { setRatingType('team'); setSelectedEntity(allTeamsList[0].name); }} 
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors border ${ratingType === 'team' ? 'bg-red-600 text-white border-red-600' : 'text-gray-600 dark:text-neutral-400 border-transparent'}`}
+                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${ratingType === 'team' ? 'text-white' : ''}`}
+                        style={{ 
+                          backgroundColor: ratingType === 'team' ? '#dc2626' : 'transparent',
+                          color: ratingType === 'team' ? '#ffffff' : (isDark ? '#9ca3af' : '#4b5563')
+                        }}
                       >
                         Team
                       </button>
@@ -437,10 +533,18 @@ export function FanPulseWidget() {
                       <select 
                         value={selectedEntity}
                         onChange={(e) => setSelectedEntity(e.target.value)}
-                        className={`w-full bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-xl px-4 py-3 text-neutral-900 dark:text-white font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-red-500`}
+                        className="w-full rounded-xl px-4 py-3 font-bold appearance-none focus:outline-none focus:ring-2"
+                        style={{ 
+                          backgroundColor: isDark ? '#262626' : '#ffffff',
+                          borderColor: isDark ? '#404040' : '#d1d5db',
+                          color: isDark ? '#ffffff' : '#111827'
+                        }}
                       >
                         {(ratingType === 'driver' ? allDriversList : allTeamsList).map(item => (
-                          <option key={item.id} value={item.name} className="bg-white dark:bg-neutral-900">
+                          <option key={item.id} value={item.name} style={{ 
+                            backgroundColor: isDark ? '#171717' : '#ffffff',
+                            color: isDark ? '#ffffff' : '#111827'
+                          }}>
                             {item.name}
                           </option>
                         ))}
@@ -448,10 +552,16 @@ export function FanPulseWidget() {
                     </div>
 
                     {/* Slider Container - SOLID BACKGROUND */}
-                    <div className="mb-6 bg-gray-50 dark:bg-neutral-800 p-4 rounded-xl border border-gray-300 dark:border-neutral-700">
+                    <div 
+                      className="mb-6 p-4 rounded-xl border"
+                      style={{ 
+                        backgroundColor: isDark ? '#262626' : '#f9fafb',
+                        borderColor: isDark ? '#404040' : '#e5e7eb'
+                      }}
+                    >
                       <div className="flex justify-between mb-2">
-                        <label className="text-xs font-bold text-gray-500 dark:text-gray-300 uppercase">Score</label>
-                        <span className="text-3xl font-black text-neutral-900 dark:text-white">{userRating}</span>
+                        <label className="text-xs font-bold uppercase" style={{ color: isDark ? '#d1d5db' : '#4b5563' }}>Score</label>
+                        <span className="text-3xl font-black" style={{ color: isDark ? '#ffffff' : '#111827' }}>{userRating}</span>
                       </div>
                       <input 
                         type="range" 
@@ -459,7 +569,11 @@ export function FanPulseWidget() {
                         max="10" 
                         value={userRating} 
                         onChange={(e) => setUserRating(Number(e.target.value))} 
-                        className={`w-full h-2 bg-gray-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-red-600`} 
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer" 
+                        style={{ 
+                          backgroundColor: isDark ? '#4b5563' : '#d1d5db',
+                          accentColor: '#dc2626'
+                        }}
                       />
                     </div>
 
@@ -470,19 +584,34 @@ export function FanPulseWidget() {
                         placeholder="Your Name (Optional)" 
                         value={userName} 
                         onChange={(e) => setUserName(e.target.value)} 
-                        className={`w-full bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white text-sm font-medium focus:outline-none focus:border-red-500 placeholder-gray-400 dark:placeholder-neutral-500 mb-6`} 
+                        className="w-full rounded-lg px-4 py-3 text-sm font-medium focus:outline-none focus:border-red-500 mb-6" 
+                        style={{ 
+                          backgroundColor: isDark ? '#262626' : '#ffffff',
+                          borderColor: isDark ? '#404040' : '#d1d5db',
+                          color: isDark ? '#ffffff' : '#111827'
+                        }}
                       />
                       <textarea 
                         placeholder="Why this rating?" 
                         value={userComment} 
                         onChange={(e) => setUserComment(e.target.value)} 
-                        className={`w-full bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg px-4 py-3 text-neutral-900 dark:text-white text-sm font-medium h-24 resize-none focus:outline-none focus:border-red-500 placeholder-gray-400 dark:placeholder-neutral-500`} 
+                        className="w-full rounded-lg px-4 py-3 text-sm font-medium h-24 resize-none focus:outline-none focus:border-red-500" 
+                        style={{ 
+                          backgroundColor: isDark ? '#262626' : '#ffffff',
+                          borderColor: isDark ? '#404040' : '#d1d5db',
+                          color: isDark ? '#ffffff' : '#111827'
+                        }}
                       />
                     </div>
 
                     <button 
                       onClick={handleSubmit} 
-                      className={`w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white border border-red-700 dark:border-red-800`}
+                      className="w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider"
+                      style={{ 
+                        backgroundColor: '#dc2626',
+                        color: '#ffffff',
+                        borderColor: '#b91c1c'
+                      }}
                     >
                       <Send className="w-4 h-4" /> Submit
                     </button>
