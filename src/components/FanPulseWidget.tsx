@@ -253,7 +253,7 @@ export function FanPulseWidget() {
         </div>
       </div>
 
-      {/* --- 🟢 VIEW ALL MODAL (SOLID BACKGROUND) --- */}
+      {/* --- 🟢 VIEW ALL MODAL (SOLID BACKGROUND WITH BETTER PADDING) --- */}
       {mounted && viewAllType && createPortal(
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -283,16 +283,16 @@ export function FanPulseWidget() {
               backgroundColor: isDark ? '#171717' : '#ffffff'
             }}
           >
-            {/* Fixed Header - SOLID BACKGROUND */}
+            {/* Fixed Header - SOLID BACKGROUND WITH MORE PADDING */}
             <div 
-              className="flex-shrink-0 p-5 border-b flex justify-between items-center rounded-t-2xl"
+              className="flex-shrink-0 px-6 py-5 border-b flex justify-between items-center rounded-t-2xl"
               style={{
                 backgroundColor: isDark ? '#262626' : '#f9fafb',
                 borderColor: isDark ? '#404040' : '#e5e7eb'
               }}
             >
               <div>
-                <h3 className="text-xl font-black uppercase tracking-tight" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+                <h3 className="text-xl font-black uppercase tracking-tight mb-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                   {viewAllType === 'driver' ? 'Driver Standings' : 'Team Standings'}
                 </h3>
                 <p className="text-xs font-medium" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
@@ -304,7 +304,7 @@ export function FanPulseWidget() {
                   setViewAllType(null); 
                   setExpandedItem(null); 
                 }}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ml-3"
                 style={{
                   backgroundColor: isDark ? '#374151' : '#f3f4f6',
                   borderColor: isDark ? '#4b5563' : '#d1d5db'
@@ -314,14 +314,14 @@ export function FanPulseWidget() {
               </button>
             </div>
 
-            {/* Scrollable Content Area - SOLID BACKGROUND */}
+            {/* Scrollable Content Area - SOLID BACKGROUND WITH BETTER PADDING */}
             <div 
               className="flex-1 overflow-y-auto modal-scroll-fix"
               style={{
                 backgroundColor: isDark ? '#171717' : '#ffffff'
               }}
             >
-              <div className="p-4 space-y-3">
+              <div className="px-5 py-4 space-y-4">
                 {(viewAllType === 'driver' ? ratings : teamRatings).map((item, idx) => (
                   <div 
                     key={item.driver_name} 
@@ -331,10 +331,10 @@ export function FanPulseWidget() {
                       borderColor: isDark ? '#404040' : '#e5e7eb'
                     }}
                   >
-                    {/* Main Row */}
+                    {/* Main Row - WITH MORE PADDING */}
                     <button 
                       onClick={() => setExpandedItem(expandedItem === item.driver_name ? null : item.driver_name)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                      className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                       style={{
                         backgroundColor: isDark ? '#262626' : '#ffffff'
                       }}
@@ -346,8 +346,8 @@ export function FanPulseWidget() {
                         >
                           #{idx + 1}
                         </span>
-                        <div>
-                          <div className="font-bold text-base" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+                        <div className="min-w-0">
+                          <div className="font-bold text-base mb-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                             {item.driver_name}
                           </div>
                           <div className="text-xs font-medium flex items-center gap-1" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
@@ -355,7 +355,7 @@ export function FanPulseWidget() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 ml-3">
                         <div className="px-3 py-1 rounded-lg font-black text-lg" style={{
                           backgroundColor: item.avg_rating >= 9 
                             ? (isDark ? '#065f46' : '#d1fae5') 
@@ -377,10 +377,10 @@ export function FanPulseWidget() {
                       </div>
                     </button>
 
-                    {/* Expanded Comments Section - SOLID BACKGROUND */}
+                    {/* Expanded Comments Section - SOLID BACKGROUND WITH BETTER PADDING */}
                     {expandedItem === item.driver_name && (
                       <div 
-                        className="border-t p-4"
+                        className="border-t px-5 py-4"
                         style={{
                           backgroundColor: isDark ? '#1f2937' : '#f9fafb',
                           borderColor: isDark ? '#374151' : '#e5e7eb'
@@ -394,17 +394,17 @@ export function FanPulseWidget() {
                             item.latest_comments.slice().reverse().map((comment, cIdx) => (
                               <div 
                                 key={cIdx} 
-                                className="p-3 rounded-lg border"
+                                className="px-4 py-3 rounded-lg border"
                                 style={{
                                   backgroundColor: isDark ? '#111827' : '#ffffff',
                                   borderColor: isDark ? '#374151' : '#e5e7eb'
                                 }}
                               >
-                                <div className="flex justify-between items-start mb-1">
+                                <div className="flex justify-between items-start mb-2">
                                   <span className="font-bold text-xs flex items-center gap-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                                     <User className="w-3 h-3" style={{ color: '#9ca3af' }} /> {comment.user}
                                   </span>
-                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{
+                                  <span className="text-[10px] font-bold px-2 py-1 rounded" style={{
                                     backgroundColor: comment.rating >= 8 
                                       ? (isDark ? '#065f46' : '#d1fae5') 
                                       : comment.rating >= 6 
@@ -419,13 +419,13 @@ export function FanPulseWidget() {
                                     {comment.rating}/10
                                   </span>
                                 </div>
-                                <p className="text-sm italic" style={{ color: isDark ? '#d1d5db' : '#4b5563' }}>"{comment.text}"</p>
-                                <div className="text-[10px] mt-2 text-right" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{comment.date}</div>
+                                <p className="text-sm italic mb-2 px-1" style={{ color: isDark ? '#d1d5db' : '#4b5563' }}>"{comment.text}"</p>
+                                <div className="text-[10px] text-right px-1" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>{comment.date}</div>
                               </div>
                             ))
                           ) : (
                             <div 
-                              className="text-center text-sm italic py-2 p-3 rounded-lg border"
+                              className="text-center text-sm italic py-3 px-4 rounded-lg border"
                               style={{
                                 backgroundColor: isDark ? '#111827' : '#ffffff',
                                 borderColor: isDark ? '#374151' : '#e5e7eb',
@@ -447,7 +447,7 @@ export function FanPulseWidget() {
         document.body
       )}
 
-      {/* --- 🟢 RATING MODAL (COMPLETELY SOLID BACKGROUND) --- */}
+      {/* --- 🟢 RATING MODAL (COMPLETELY SOLID BACKGROUND WITH BETTER PADDING) --- */}
       {mounted && isRatingOpen && createPortal(
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
@@ -474,17 +474,17 @@ export function FanPulseWidget() {
               borderColor: isDark ? '#404040' : '#d1d5db'
             }}>
               <div className={SPACING.CARD_GAP}>
-                {/* MAIN RATING MODAL CARD - SOLID BACKGROUND */}
+                {/* MAIN RATING MODAL CARD - SOLID BACKGROUND WITH BETTER PADDING */}
                 <div 
                   className={`${SPACING.BORDER_RADIUS} shadow-2xl relative`}
                   style={{ 
                     backgroundColor: isDark ? '#171717' : '#ffffff'
                   }}
                 >
-                  <div className={SPACING.CARD_PADDING}>
+                  <div className="px-6 py-5">
                     <button 
                       onClick={() => setIsRatingOpen(false)}
-                      className="absolute top-4 right-4 p-1 rounded-full z-10"
+                      className="absolute top-5 right-5 p-2 rounded-full z-10"
                       style={{ 
                         backgroundColor: isDark ? '#374151' : '#f3f4f6',
                         borderColor: isDark ? '#4b5563' : '#d1d5db',
@@ -494,13 +494,13 @@ export function FanPulseWidget() {
                       <X className="w-5 h-5" />
                     </button>
 
-                    <h3 className="text-xl font-black uppercase tracking-tight mb-1" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+                    <h3 className="text-xl font-black uppercase tracking-tight mb-2 pr-8" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                       Rate {ratingType === 'driver' ? 'Driver' : 'Team'}
                     </h3>
                     
-                    {/* Type Toggle - SOLID BACKGROUND */}
+                    {/* Type Toggle - SOLID BACKGROUND WITH MORE SPACING */}
                     <div 
-                      className="flex rounded-xl p-1 mb-6"
+                      className="flex rounded-xl p-1 mb-6 mt-4"
                       style={{ 
                         backgroundColor: isDark ? '#262626' : '#f3f4f6',
                         borderColor: isDark ? '#404040' : '#d1d5db'
@@ -508,7 +508,7 @@ export function FanPulseWidget() {
                     >
                       <button 
                         onClick={() => { setRatingType('driver'); setSelectedEntity(allDriversList[0].name); }} 
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${ratingType === 'driver' ? 'text-white' : ''}`}
+                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-colors ${ratingType === 'driver' ? 'text-white' : ''}`}
                         style={{ 
                           backgroundColor: ratingType === 'driver' ? '#dc2626' : 'transparent',
                           color: ratingType === 'driver' ? '#ffffff' : (isDark ? '#9ca3af' : '#4b5563')
@@ -518,7 +518,7 @@ export function FanPulseWidget() {
                       </button>
                       <button 
                         onClick={() => { setRatingType('team'); setSelectedEntity(allTeamsList[0].name); }} 
-                        className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${ratingType === 'team' ? 'text-white' : ''}`}
+                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-colors ${ratingType === 'team' ? 'text-white' : ''}`}
                         style={{ 
                           backgroundColor: ratingType === 'team' ? '#dc2626' : 'transparent',
                           color: ratingType === 'team' ? '#ffffff' : (isDark ? '#9ca3af' : '#4b5563')
@@ -528,7 +528,7 @@ export function FanPulseWidget() {
                       </button>
                     </div>
                     
-                    {/* Dropdown - SOLID BACKGROUND */}
+                    {/* Dropdown - SOLID BACKGROUND WITH MORE MARGIN */}
                     <div className="relative mb-6">
                       <select 
                         value={selectedEntity}
@@ -551,15 +551,15 @@ export function FanPulseWidget() {
                       </select>
                     </div>
 
-                    {/* Slider Container - SOLID BACKGROUND */}
+                    {/* Slider Container - SOLID BACKGROUND WITH BETTER PADDING */}
                     <div 
-                      className="mb-6 p-4 rounded-xl border"
+                      className="mb-6 px-5 py-4 rounded-xl border"
                       style={{ 
                         backgroundColor: isDark ? '#262626' : '#f9fafb',
                         borderColor: isDark ? '#404040' : '#e5e7eb'
                       }}
                     >
-                      <div className="flex justify-between mb-2">
+                      <div className="flex justify-between items-center mb-3">
                         <label className="text-xs font-bold uppercase" style={{ color: isDark ? '#d1d5db' : '#4b5563' }}>Score</label>
                         <span className="text-3xl font-black" style={{ color: isDark ? '#ffffff' : '#111827' }}>{userRating}</span>
                       </div>
@@ -569,7 +569,7 @@ export function FanPulseWidget() {
                         max="10" 
                         value={userRating} 
                         onChange={(e) => setUserRating(Number(e.target.value))} 
-                        className="w-full h-2 rounded-lg appearance-none cursor-pointer" 
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer px-1" 
                         style={{ 
                           backgroundColor: isDark ? '#4b5563' : '#d1d5db',
                           accentColor: '#dc2626'
@@ -577,14 +577,14 @@ export function FanPulseWidget() {
                       />
                     </div>
 
-                    {/* Inputs - SOLID BACKGROUND */}
-                    <div className={`${SPACING.CONTENT_GAP} mb-6`}>
+                    {/* Inputs - SOLID BACKGROUND WITH BETTER SPACING */}
+                    <div className="mb-6 space-y-4">
                       <input 
                         type="text" 
                         placeholder="Your Name (Optional)" 
                         value={userName} 
                         onChange={(e) => setUserName(e.target.value)} 
-                        className="w-full rounded-lg px-4 py-3 text-sm font-medium focus:outline-none focus:border-red-500 mb-6" 
+                        className="w-full rounded-lg px-4 py-3 text-sm font-medium focus:outline-none focus:border-red-500" 
                         style={{ 
                           backgroundColor: isDark ? '#262626' : '#ffffff',
                           borderColor: isDark ? '#404040' : '#d1d5db',
@@ -595,7 +595,7 @@ export function FanPulseWidget() {
                         placeholder="Why this rating?" 
                         value={userComment} 
                         onChange={(e) => setUserComment(e.target.value)} 
-                        className="w-full rounded-lg px-4 py-3 text-sm font-medium h-24 resize-none focus:outline-none focus:border-red-500" 
+                        className="w-full rounded-lg px-4 py-3 text-sm font-medium h-28 resize-none focus:outline-none focus:border-red-500" 
                         style={{ 
                           backgroundColor: isDark ? '#262626' : '#ffffff',
                           borderColor: isDark ? '#404040' : '#d1d5db',
@@ -606,7 +606,7 @@ export function FanPulseWidget() {
 
                     <button 
                       onClick={handleSubmit} 
-                      className="w-full font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider"
+                      className="w-full font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider mt-2"
                       style={{ 
                         backgroundColor: '#dc2626',
                         color: '#ffffff',
