@@ -2886,20 +2886,21 @@ body.modal-open {
   z-index: 0 !important;
 }
 
-.modal-open .isolate {
-  position: static !important;
-  z-index: 0 !important;
-}
-
-.modal-backdrop {
-  z-index: 9999 !important;
-}
-
+/* Ensure modals are properly visible */
 .modal-content {
-  z-index: 10000 !important;
+  background-color: white !important;
 }
 
-/* Fix for iOS Safari modal scrolling */
+.dark .modal-content {
+  background-color: #171717 !important;
+}
+
+/* Fix backdrop visibility */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* iOS scroll fix */
 @supports (-webkit-touch-callout: none) {
   .modal-scroll-fix {
     -webkit-overflow-scrolling: touch;
