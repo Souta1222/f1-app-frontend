@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User, X } from 'lucide-react';
+import { ChevronLeft, Info, TrendingUp, Trophy, Crown, User, X, BarChart3 } from 'lucide-react';
 import { races, drivers } from '../lib/data'; 
 import { useTheme } from './ThemeContext';
 
@@ -13,7 +13,9 @@ type PredictionCard = {
   driverId: string | null; 
   team: string;
   position: number;
-  probability: string;
+  probability: string;       // Win %
+  podiumProbability: string; // Podium %
+  pointsProbability: string; // Points %
   reasons: {
     positive: string[];
     negative: string[];
@@ -79,16 +81,37 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const data = await response.json();
         const backendList = data.predictions || [];
 
-        const formattedResults: PredictionCard[] = backendList.map((item: any) => ({
-            id: item.driver.name,
-            driverName: item.driver.name,
-            driverId: getDriverIdByName(item.driver.name), 
-            team: item.driver.team,
-            position: item.position,
-            probability: item.probability + "%",
-            reasons: item.reasons,
-            driver: { teamColor: getTeamColor(item.driver.team) }
-        }));
+        const formattedResults: PredictionCard[] = backendList.map((item: any) => {
+            // Parse Win %
+            const winVal = parseFloat(item.probability);
+            
+            // 🟢 ESTIMATE PODIUM/POINTS if missing from backend 
+            // (Remove this logic once your backend sends podium_probability directly)
+            let podiumVal = item.podium_probability 
+                ? parseFloat(item.podium_probability) 
+                : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
+            
+            let pointsVal = item.points_probability
+                ? parseFloat(item.points_probability)
+                : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
+
+            // Clamp values
+            if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
+            if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+
+            return {
+                id: item.driver.name,
+                driverName: item.driver.name,
+                driverId: getDriverIdByName(item.driver.name), 
+                team: item.driver.team,
+                position: item.position,
+                probability: item.probability + "%",
+                podiumProbability: podiumVal.toFixed(1) + "%",
+                pointsProbability: pointsVal.toFixed(1) + "%",
+                reasons: item.reasons,
+                driver: { teamColor: getTeamColor(item.driver.team) }
+            };
+        });
 
         setPredictions(formattedResults);
       } catch (error) {
@@ -151,7 +174,6 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         
         {/* HEADER */}
         <div 
-          // 🟢 FIX: Increased z-index to 50 to sit above all scrolling content (like the P1 Crown)
           className="sticky top-0 z-50 shadow-lg px-4 py-4"
           style={{ background: 'linear-gradient(to right, #991b1b, #7f1d1d)' }}
         >
@@ -328,14 +350,25 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               </div>
             </div>
 
-            {/* Stats Card */}
-            <div className={`p-6 rounded-xl border mb-8 ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                <div className="flex justify-between items-end mb-3">
-                    <span className={`text-xs font-bold uppercase ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Win Probability</span>
-                    <span className="text-3xl font-black text-green-600 font-mono tracking-tight">{selectedDriver.probability}</span>
+            {/* 🟢 NEW: Stats Grid (3 Columns) */}
+            <div className={`grid grid-cols-3 gap-2 mb-8`}>
+                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1">
+                        <Trophy className="w-3 h-3" /> Win
+                    </div>
+                    <div className="text-xl font-black text-white">{selectedDriver.probability}</div>
                 </div>
-                <div className={`h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-neutral-700' : 'bg-slate-200'}`}>
-                    <div className="h-full bg-green-500 transition-all duration-1000 ease-out" style={{ width: selectedDriver.probability }} />
+                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1">
+                        <BarChart3 className="w-3 h-3" /> Podium
+                    </div>
+                    <div className="text-xl font-black text-white">{selectedDriver.podiumProbability}</div>
+                </div>
+                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1">
+                        <TrendingUp className="w-3 h-3" /> Points
+                    </div>
+                    <div className="text-xl font-black text-white">{selectedDriver.pointsProbability}</div>
                 </div>
             </div>
 
@@ -364,4 +397,4 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
       )}
     </>
   );
-}
+}z
