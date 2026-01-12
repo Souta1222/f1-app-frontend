@@ -447,7 +447,7 @@ export function FanPulseWidget() {
         document.body
       )}
 
-      {/* --- 🟢 RATING MODAL (COMPLETELY SOLID BACKGROUND WITH BETTER PADDING) --- */}
+      {/* --- 🟢 RATING MODAL (COMPLETELY SOLID BACKGROUND WITH EXIT BUTTON FIXED) --- */}
       {mounted && isRatingOpen && createPortal(
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
@@ -469,6 +469,20 @@ export function FanPulseWidget() {
           />
           
           <div className="relative z-[10000] w-full max-w-md max-h-[90vh] overflow-y-auto modal-scroll-fix">
+            {/* EXIT BUTTON MOVED OUTSIDE THE CONTENT CARD */}
+            <button 
+              onClick={() => setIsRatingOpen(false)}
+              className="absolute -top-3 -right-3 p-3 rounded-full z-20 shadow-lg"
+              style={{ 
+                backgroundColor: isDark ? '#374151' : '#ffffff',
+                border: '2px solid',
+                borderColor: isDark ? '#4b5563' : '#d1d5db',
+                color: isDark ? '#d1d5db' : '#4b5563'
+              }}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
             <div className={`${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH}`} style={{ 
               backgroundColor: isDark ? '#262626' : '#e5e7eb',
               borderColor: isDark ? '#404040' : '#d1d5db'
@@ -482,19 +496,8 @@ export function FanPulseWidget() {
                   }}
                 >
                   <div className="px-6 py-5">
-                    <button 
-                      onClick={() => setIsRatingOpen(false)}
-                      className="absolute top-5 right-5 p-2 rounded-full z-10"
-                      style={{ 
-                        backgroundColor: isDark ? '#374151' : '#f3f4f6',
-                        borderColor: isDark ? '#4b5563' : '#d1d5db',
-                        color: isDark ? '#d1d5db' : '#4b5563'
-                      }}
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-
-                    <h3 className="text-xl font-black uppercase tracking-tight mb-2 pr-8" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+                    {/* Title without close button overlapping */}
+                    <h3 className="text-xl font-black uppercase tracking-tight mb-2" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                       Rate {ratingType === 'driver' ? 'Driver' : 'Team'}
                     </h3>
                     
