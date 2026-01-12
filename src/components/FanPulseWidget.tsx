@@ -54,13 +54,22 @@ export function FanPulseWidget() {
 
   // BODY SCROLL LOCK
   useEffect(() => {
-    if (isRatingOpen || viewAllType) {
+    const hasModal = isRatingOpen || viewAllType;
+    
+    if (hasModal) {
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     }
+    
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     };
   }, [isRatingOpen, viewAllType]);
 
@@ -135,7 +144,14 @@ export function FanPulseWidget() {
 
   return (
     <>
-      <div className={`transition-all duration-300 ${(isRatingOpen || viewAllType) ? 'blur-sm pointer-events-none' : ''}`}>
+    <div 
+  className={`transition-all duration-300 ${
+    (isRatingOpen || viewAllType) 
+      ? 'blur-sm pointer-events-none select-none' 
+      : ''
+  }`}
+>
+  {/* Home screen content */}
         <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200`}>
           <div className={SPACING.CARD_GAP}>
             <div className={`${SPACING.BORDER_RADIUS} w-full bg-slate-200 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100`}>
@@ -236,103 +252,69 @@ export function FanPulseWidget() {
       </div>
 
     {/* --- 🟢 VIEW ALL MODAL (INLINED PORTAL + Z-INDEX FIX) --- */}
+    // For VIEW ALL MODAL
     {mounted && viewAllType && createPortal(
-      <div 
-        className="fixed inset-0 z-[99999] flex items-center justify-center p-4 animate-in fade-in duration-300 overflow-y-auto"
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewAllType(null)} />
-        
-        <div className={`relative z-[100000] w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800`}>
-            {/* Header */}
-            <div className="p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900/50 rounded-t-2xl">
-                <div>
-                    <h3 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight">
-                        {viewAllType === 'driver' ? 'Driver Standings' : 'Team Standings'}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Based on community votes
-                    </p>
-                </div>
-                <button 
-                  onClick={() => { setViewAllType(null); setExpandedItem(null); }}
-                  className="bg-gray-200 dark:bg-neutral-800 p-2 rounded-full hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </button>
-            </div>
-
-            {/* Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {(viewAllType === 'driver' ? ratings : teamRatings).map((item, idx) => (
-                    <div key={item.driver_name} className="overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm transition-all">
-                        {/* Main Row */}
-                        <button 
-                            onClick={() => setExpandedItem(expandedItem === item.driver_name ? null : item.driver_name)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors text-left"
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className={`font-black text-xl w-8 text-center ${idx < 3 ? 'text-yellow-500' : 'text-gray-400'}`}>
-                                    #{idx + 1}
-                                </span>
-                                <div>
-                                    <div className="font-bold text-neutral-900 dark:text-white text-base">
-                                        {item.driver_name}
-                                    </div>
-                                    <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                                        {item.total_votes} ratings • Click to see comments
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className={`px-3 py-1 rounded-lg font-black text-lg ${
-                                    item.avg_rating >= 9 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                    item.avg_rating >= 7 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                }`}>
-                                    {item.avg_rating.toFixed(1)}
-                                </div>
-                                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedItem === item.driver_name ? 'rotate-180' : ''}`} />
-                            </div>
-                        </button>
-
-                        {/* Expanded Comments Section */}
-                        {expandedItem === item.driver_name && (
-                            <div className="bg-gray-50 dark:bg-neutral-950/50 border-t border-gray-100 dark:border-neutral-800 p-4">
-                                <div className="text-xs font-bold uppercase text-gray-400 mb-3 flex items-center gap-1">
-                                    <MessageSquare className="w-3 h-3" /> Recent Feedback
-                                </div>
-                                <div className="space-y-3">
-                                    {item.latest_comments && item.latest_comments.length > 0 ? (
-                                        item.latest_comments.slice().reverse().map((comment, cIdx) => (
-                                            <div key={cIdx} className="bg-white dark:bg-neutral-900 p-3 rounded-lg border border-gray-100 dark:border-neutral-800">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="font-bold text-xs text-neutral-900 dark:text-white flex items-center gap-1">
-                                                        <User className="w-3 h-3 text-gray-400" /> {comment.user}
-                                                    </span>
-                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                                        comment.rating >= 8 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
-                                                        {comment.rating}/10
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 italic">"{comment.text}"</p>
-                                                <div className="text-[10px] text-gray-400 mt-2 text-right">{comment.date}</div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center text-sm text-gray-400 italic py-2">No comments yet.</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+  <div 
+    className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+    style={{ 
+      position: 'fixed', 
+      top: 0, 
+      left: 0, 
+      right: 0, 
+      bottom: 0,
+      overflow: 'hidden'
+    }}
+  >
+    {/* Backdrop */}
+    <div 
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+      onClick={() => {
+        setViewAllType(null);
+        setExpandedItem(null);
+      }}
+    />
+    
+    {/* Modal Container */}
+    <div 
+      className="relative z-[10000] w-full max-w-lg h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 overflow-hidden"
+    >
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900/50">
+        <div>
+          <h3 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight">
+            {viewAllType === 'driver' ? 'Driver Standings' : 'Team Standings'}
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            Based on community votes
+          </p>
         </div>
-      </div>,
-      document.body
-    )}
+        <button 
+          onClick={() => { 
+            setViewAllType(null); 
+            setExpandedItem(null); 
+          }}
+          className="bg-gray-200 dark:bg-neutral-800 p-2 rounded-full hover:bg-gray-300 dark:hover:bg-neutral-700 transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+        </button>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-3">
+          {(viewAllType === 'driver' ? ratings : teamRatings).map((item, idx) => (
+            <div key={item.driver_name} className="overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+              {/* ... item content ... */}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>,
+  document.body
+)}
+
+// For RATING MODAL (similar fix)
 
     {/* --- 🟢 RATING MODAL (INLINED PORTAL + Z-INDEX FIX) --- */}
     {mounted && isRatingOpen && createPortal(

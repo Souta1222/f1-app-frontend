@@ -41,6 +41,26 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Ensure portal modal is above everything */
+.ReactModalPortal {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Fix for iOS Safari modal scrolling */
+@supports (-webkit-touch-callout: none) {
+  .modal-scroll-fix {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Prevent backdrop from being interactive when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
