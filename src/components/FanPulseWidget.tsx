@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom'; 
+// 🟢 FIXED: Added ChevronRight back to imports
 import { Star, Send, X, User, Users, AlertCircle, ChevronRight, MessageSquare, ChevronDown } from 'lucide-react';
 import { drivers, teams } from '../lib/data';
 // @ts-ignore
@@ -46,11 +47,22 @@ export function FanPulseWidget() {
   const [viewAllType, setViewAllType] = useState<'driver' | 'team' | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   
-  // 🟢 MOUNT STATE (Prevents SSR issues with Portal)
   const [mounted, setMounted] = useState(false);
 
   const allDriversList = Object.values(drivers);
   const allTeamsList = Object.values(teams);
+
+  // BODY SCROLL LOCK
+  useEffect(() => {
+    if (isRatingOpen || viewAllType) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isRatingOpen, viewAllType]);
 
   // FETCH DATA
   const fetchData = async () => {
@@ -92,13 +104,12 @@ export function FanPulseWidget() {
   };
 
   useEffect(() => {
-    setMounted(true); // 🟢 Activate portal only on client
+    setMounted(true); 
     fetchData();
   }, []);
 
   const handleSubmit = async () => {
     if (!selectedEntity) return;
-    
     try {
       await fetch(`${API_BASE}/community/rate`, {
         method: 'POST',
@@ -113,13 +124,10 @@ export function FanPulseWidget() {
           username: userName || "Anonymous Fan"
         })
       });
-      
       setIsRatingOpen(false);
       setUserComment("");
       setUserName("");
-      
       setTimeout(fetchData, 500);
-      
     } catch (e) {
       alert("Failed to submit rating");
     }
@@ -127,12 +135,7 @@ export function FanPulseWidget() {
 
   return (
     <>
-      {/* BACKGROUND BLUR */}
-      {(isRatingOpen || viewAllType) && (
-        <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-sm transition-all duration-300" />
-      )}
-      
-      <div className={`transition-all duration-300 ${(isRatingOpen || viewAllType) ? 'blur-sm' : ''}`}>
+      <div className={`transition-all duration-300 ${(isRatingOpen || viewAllType) ? 'blur-sm pointer-events-none' : ''}`}>
         <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200`}>
           <div className={SPACING.CARD_GAP}>
             <div className={`${SPACING.BORDER_RADIUS} w-full bg-slate-200 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100`}>
@@ -157,7 +160,7 @@ export function FanPulseWidget() {
                       </div>
                       <button 
                         onClick={() => setViewAllType('driver')}
-                        className="text-[10px] font-bold text-blue-500 hover:underline flex items-center"
+                        className="text-[10px] font-bold text-blue-500 hover:underline flex items-center pointer-events-auto"
                       >
                         View All <ChevronRight className="w-3 h-3" />
                       </button>
@@ -181,7 +184,7 @@ export function FanPulseWidget() {
                     </div>
                     <button 
                       onClick={() => { setSelectedEntity(allDriversList[0].name); setRatingType('driver'); setIsRatingOpen(true); }}
-                      className="w-full mt-3 font-bold py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs uppercase tracking-wider"
+                      className="w-full mt-3 font-bold py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs uppercase tracking-wider pointer-events-auto"
                     >
                       Rate a Driver
                     </button>
@@ -196,7 +199,7 @@ export function FanPulseWidget() {
                       </div>
                       <button 
                         onClick={() => setViewAllType('team')}
-                        className="text-[10px] font-bold text-red-500 hover:underline flex items-center"
+                        className="text-[10px] font-bold text-red-500 hover:underline flex items-center pointer-events-auto"
                       >
                         View All <ChevronRight className="w-3 h-3" />
                       </button>
@@ -220,7 +223,7 @@ export function FanPulseWidget() {
                     </div>
                     <button 
                       onClick={() => { setSelectedEntity(allTeamsList[0].name); setRatingType('team'); setIsRatingOpen(true); }}
-                      className="w-full mt-3 font-bold py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs uppercase tracking-wider"
+                      className="w-full mt-3 font-bold py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs uppercase tracking-wider pointer-events-auto"
                     >
                       Rate a Team
                     </button>
@@ -232,12 +235,15 @@ export function FanPulseWidget() {
         </div>
       </div>
 
-    {/* --- 🟢 VIEW ALL MODAL (INLINED PORTAL) --- */}
+    {/* --- 🟢 VIEW ALL MODAL (INLINED PORTAL + Z-INDEX FIX) --- */}
     {mounted && viewAllType && createPortal(
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div 
+        className="fixed inset-0 z-[99999] flex items-center justify-center p-4 animate-in fade-in duration-300 overflow-y-auto"
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setViewAllType(null)} />
         
-        <div className={`relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800`}>
+        <div className={`relative z-[100000] w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800`}>
             {/* Header */}
             <div className="p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900/50 rounded-t-2xl">
                 <div>
@@ -328,12 +334,15 @@ export function FanPulseWidget() {
       document.body
     )}
 
-    {/* --- 🟢 RATING MODAL (INLINED PORTAL) --- */}
+    {/* --- 🟢 RATING MODAL (INLINED PORTAL + Z-INDEX FIX) --- */}
     {mounted && isRatingOpen && createPortal(
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div 
+        className="fixed inset-0 z-[99999] flex items-center justify-center p-6 animate-in fade-in duration-300 overflow-y-auto"
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsRatingOpen(false)} />
         
-        <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200 dark:border-neutral-800 w-full max-w-md`}>
+        <div className={`relative z-[100000] ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} border-slate-200 dark:border-neutral-800 w-full max-w-md`}>
           <div className={SPACING.CARD_GAP}>
             <div className={`${SPACING.BORDER_RADIUS} shadow-2xl relative animate-in zoom-in-95 fade-in duration-300 bg-gray-100 dark:bg-neutral-900`}>
               <div className={SPACING.CARD_PADDING}>
