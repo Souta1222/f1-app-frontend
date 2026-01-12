@@ -2880,3 +2880,28 @@ body.modal-open {
   transform: scale(0.95);
   transition: opacity 300ms, transform 300ms;
 }
+
+.modal-open [data-home-screen="true"] {
+  position: static !important;
+  z-index: 0 !important;
+}
+
+.modal-open .isolate {
+  position: static !important;
+  z-index: 0 !important;
+}
+
+.modal-backdrop {
+  z-index: 9999 !important;
+}
+
+.modal-content {
+  z-index: 10000 !important;
+}
+
+/* Fix for iOS Safari modal scrolling */
+@supports (-webkit-touch-callout: none) {
+  .modal-scroll-fix {
+    -webkit-overflow-scrolling: touch;
+  }
+}

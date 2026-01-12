@@ -45,8 +45,24 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [realNews, setRealNews] = useState<NewsArticle[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [hasModalOpen, setHasModalOpen] = useState(false);
   
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
+
+  // --- MODAL DETECTION ---
+  useEffect(() => {
+    const checkForModals = () => {
+      // Check if any modal elements exist in the DOM
+      const modals = document.querySelectorAll('[data-modal="true"]');
+      setHasModalOpen(modals.length > 0);
+    };
+
+    // Check initially and set up interval
+    checkForModals();
+    const interval = setInterval(checkForModals, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // --- COUNTDOWN LOGIC ---
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
@@ -167,11 +183,15 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const countdownBoxStyle = getCountdownBoxStyle();
 
   return (
-    <div className="min-h-screen font-sans w-full transition-colors duration-300" style={containerStyle}>
+    <div 
+      className={`min-h-screen font-sans w-full transition-colors duration-300 ${hasModalOpen ? 'z-0' : ''}`}
+      style={containerStyle}
+      data-home-screen="true"
+    >
       
       {/* --- HEADER --- */}
       <div 
-        className="sticky top-0 z-50 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
+        className="sticky top-0 z-30 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
         style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}
       >
         <div>
@@ -208,7 +228,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
             </div>
           </div>
           
-          <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('hero')} overflow-hidden z-10`}>
+          <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${getBorderColor('hero')} overflow-hidden`}>
             <div className={SPACING.CARD_GAP}>
               <div className={`${SPACING.BORDER_RADIUS} w-full`} style={heroCardStyle}>
                 <div className={`absolute top-0 right-0 w-40 h-full skew-x-12 transform translate-x-20 pointer-events-none ${speedLinesColor}`} />
@@ -302,12 +322,15 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 </p>
             </div>
             
-            <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                <div className={SPACING.CARD_GAP}>
-                <div className={`${SPACING.BORDER_RADIUS} ${isDark ? 'bg-neutral-900' : 'bg-slate-50'}`}>
-                    <FanPulseWidget />
-                </div>
-                </div>
+            {/* ISOLATE CONTAINER TO PREVENT Z-INDEX INTERFERENCE */}
+            <div className="isolate">
+              <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+                  <div className={SPACING.CARD_GAP}>
+                  <div className={`${SPACING.BORDER_RADIUS} ${isDark ? 'bg-neutral-900' : 'bg-slate-50'}`}>
+                      <FanPulseWidget />
+                  </div>
+                  </div>
+              </div>
             </div>
         </section>
 

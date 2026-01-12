@@ -264,10 +264,11 @@ export function FanPulseWidget() {
             bottom: 0,
             overflow: 'hidden'
           }}
+          data-modal="true"
         >
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-backdrop" 
             onClick={() => {
               setViewAllType(null);
               setExpandedItem(null);
@@ -276,7 +277,7 @@ export function FanPulseWidget() {
           
           {/* Modal Container */}
           <div 
-            className="relative z-[10000] w-full max-w-lg h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 overflow-hidden"
+            className="relative z-[10000] w-full max-w-lg h-[85vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 overflow-hidden modal-content"
           >
             {/* Fixed Header */}
             <div className="flex-shrink-0 p-5 border-b border-gray-100 dark:border-neutral-800 flex justify-between items-center bg-gray-50 dark:bg-neutral-900/50">
@@ -385,9 +386,10 @@ export function FanPulseWidget() {
             bottom: 0,
             overflow: 'hidden'
           }}
+          data-modal="true"
         >
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-backdrop" 
             onClick={() => setIsRatingOpen(false)} 
           />
           
