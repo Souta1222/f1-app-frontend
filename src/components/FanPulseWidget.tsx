@@ -447,7 +447,7 @@ export function FanPulseWidget() {
         document.body
       )}
 
-      {/* --- 🟢 RATING MODAL (UPDATED WITH EXIT BUTTON INSIDE MODAL) --- */}
+      {/* --- 🟢 RATING MODAL (UPDATED WITH EXIT BUTTON INSIDE MODAL AND PROPER SUBMIT BUTTON SPACING) --- */}
       {mounted && isRatingOpen && createPortal(
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6"
@@ -491,8 +491,8 @@ export function FanPulseWidget() {
                 <X className="w-5 h-5" />
               </button>
               
-              {/* Modal Content with padding for exit button */}
-              <div className="px-6 py-7 pt-8">
+              {/* Modal Content with padding for exit button - FIXED: Added bottom padding for submit button */}
+              <div className="px-6 py-7 pt-8 pb-8">
                 {/* Title with spacing for exit button */}
                 <h3 className="text-xl font-black uppercase tracking-tight mb-2 pr-10" style={{ color: isDark ? '#ffffff' : '#111827' }}>
                   Rate {ratingType === 'driver' ? 'Driver' : 'Team'}
@@ -580,8 +580,8 @@ export function FanPulseWidget() {
                   />
                 </div>
 
-                {/* Inputs */}
-                <div className="mb-6 space-y-4">
+                {/* Inputs with proper bottom margin */}
+                <div className="mb-8 space-y-4">
                   <input 
                     type="text" 
                     placeholder="Your Name (Optional)" 
@@ -607,18 +607,20 @@ export function FanPulseWidget() {
                   />
                 </div>
 
-                {/* Submit Button */}
-                <button 
-                  onClick={handleSubmit} 
-                  className="w-full font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider hover:bg-red-700 active:scale-[0.98]"
-                  style={{ 
-                    backgroundColor: '#dc2626',
-                    color: '#ffffff',
-                    borderColor: '#b91c1c'
-                  }}
-                >
-                  <Send className="w-4 h-4" /> Submit
-                </button>
+                {/* Submit Button with proper top margin */}
+                <div className="mt-6">
+                  <button 
+                    onClick={handleSubmit} 
+                    className="w-full font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider hover:bg-red-700 active:scale-[0.98]"
+                    style={{ 
+                      backgroundColor: '#dc2626',
+                      color: '#ffffff',
+                      borderColor: '#b91c1c'
+                    }}
+                  >
+                    <Send className="w-4 h-4" /> Submit
+                  </button>
+                </div>
               </div>
             </div>
           </div>
