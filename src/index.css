@@ -2906,3 +2906,50 @@ body.modal-open {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+.modal-exit-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  background: #f1f3f4;
+  border: 1px solid #dadce0;
+  border-radius: 50%;
+  color: #5f6368;
+  font-size: 18px;
+  font-weight: normal;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.modal-exit-button:hover {
+  background: #e8eaed;
+  color: #3c4043;
+  border-color: #bdc1c6;
+}
+
+.modal-exit-button:active {
+  background: #dadce0;
+  transform: scale(0.95);
+}
+.modal-exit-button.minimal {
+  width: 25px;
+  height: 25px;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #70757a;
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.modal-exit-button.minimal:hover {
+  background: #f5f5f5;
+  color: #202124;
+}
