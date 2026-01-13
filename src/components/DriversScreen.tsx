@@ -25,7 +25,7 @@ const teams = [
   { name: 'Haas', value: 'Haas', color: '#B6BABD' },
   { name: 'Kick Sauber', value: 'Kick Sauber', color: '#52E252' },
   { name: 'Alpine', value: 'Alpine', color: '#FF87BC' },
-  { name: 'Retired Teams', value: 'retired_teams', color: '#888888' },
+  { name: 'Retired', value: 'retired_teams', color: '#888888' },
 ];
 
 // 🟢 Status filter options
