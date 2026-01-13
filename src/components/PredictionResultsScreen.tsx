@@ -88,20 +88,15 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const backendList = data.predictions || [];
 
         const formattedResults: PredictionCard[] = backendList.map((item: any) => {
-            // Backend sends numbers now (float), ensure we handle them
             const winVal = typeof item.probability === 'number' ? item.probability : parseFloat(item.probability || '0');
             
-            // 🟢 LOGIC MATCH: The backend focuses on Win %, so we calculate logical Podium/Points stats 
-            // to ensure the UI looks populated even if the backend simple-mode doesn't send them explicitly.
-            
+            // Calculate fallback stats
             let podiumVal = 0;
             let pointsVal = 0;
 
-            // Use backend data if available (Realistic Simulation mode)
             if (item.stats && item.stats.podium_prob) {
                 podiumVal = item.stats.podium_prob;
             } else {
-                // Fallback math based on Position & Win %
                 if (item.position <= 3) podiumVal = Math.min(99, Math.max(70, winVal * 2));
                 else if (item.position <= 6) podiumVal = Math.min(60, Math.max(20, winVal * 4));
                 else podiumVal = Math.max(1, 15 - item.position);
@@ -110,24 +105,24 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             if (item.stats && item.stats.points_prob) {
                 pointsVal = item.stats.points_prob;
             } else {
-                 // Fallback math
                 if (item.position <= 10) pointsVal = Math.min(99, Math.max(60, 100 - (item.position * 5)));
                 else pointsVal = Math.max(5, 40 - ((item.position - 10) * 5));
             }
 
-            // 🟢 ID FIX: Prefer backend ID, fallback to local name lookup
-            const resolvedId = item.driver.id || getDriverIdByName(item.driver.name);
+            // 🔴 FIX IS HERE: Swap the order!
+            // Try to find the official ID from local data FIRST (e.g. finds "HAM" from "Lewis Hamilton")
+            // Only use backend ID (e.g. "LEW") if local lookup fails.
+            const resolvedId = getDriverIdByName(item.driver.name) || item.driver.id;
 
             return {
                 id: item.driver.name,
                 driverName: item.driver.name,
-                driverId: resolvedId, 
+                driverId: resolvedId, // <--- Using the fixed ID
                 team: item.driver.team,
                 position: item.position,
                 probability: winVal.toFixed(1) + "%",
                 podiumProbability: podiumVal.toFixed(1) + "%",
                 pointsProbability: pointsVal.toFixed(1) + "%",
-                // Handle reasons safely
                 reasons: item.reasons || { positive: [], negative: [] },
                 driver: { teamColor: getTeamColor(item.driver.team) }
             };
@@ -142,7 +137,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
     };
 
     fetchPredictions();
-  }, [raceId, race]);
+}, [raceId, race]);
 
   if (!race) return null;
 
