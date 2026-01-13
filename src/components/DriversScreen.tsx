@@ -101,16 +101,15 @@ export function DriversScreen() {
     
     // Direct URLs to static files - try multiple patterns
     const fallbackPatterns = [
-      `${API_BASE}/driver-faces/${driverId}1.jpg`,
-      `${API_BASE}/driver-faces/${driverId}2.jpg`,
-      `${API_BASE}/driver-faces/${driverId}3.jpg`,
-      `${API_BASE}/driver-faces/${driverId}1.png`,
-      `${API_BASE}/driver-faces/${driverId}2.png`,
-      `${API_BASE}/driver-faces/${driverId}.jpg`,
-      `${API_BASE}/driver-faces/${driverId}.png`,
+      `${API_BASE}/debug-driver-files/${driverId}1.jpg`,
+      `${API_BASE}/debug-driver-files/${driverId}2.jpg`,
+      `${API_BASE}/debug-driver-files/${driverId}3.jpg`,
+      `${API_BASE}/debug-driver-files/${driverId}1.png`,
+      `${API_BASE}/debug-driver-files/${driverId}2.png`,
+      `${API_BASE}/debug-driver-files/${driverId}.jpg`,
+      `${API_BASE}/debug-driver-files/${driverId}.png`,
       'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
     ];
-    
     return fallbackPatterns[0];
   };
 
@@ -186,10 +185,10 @@ export function DriversScreen() {
           
           mappedDrivers.forEach((driver: Driver) => {
             const imageUrls = [
-              `${API_BASE}/driver-faces/${driver.id}1.jpg`,
-              `${API_BASE}/driver-faces/${driver.id}2.jpg`,
-              `${API_BASE}/driver-faces/${driver.id}3.jpg`,
-              `${API_BASE}/driver-faces/${driver.id}.jpg`,
+              `${API_BASE}/debug-driver-files/${driver.id}1.jpg`,
+              `${API_BASE}/debug-driver-files/${driver.id}2.jpg`,
+              `${API_BASE}/debug-driver-files/${driver.id}3.jpg`,
+              `${API_BASE}/debug-driver-files/${driver.id}.jpg`,
             ];
             
             initialImages[driver.id] = imageUrls;
@@ -497,10 +496,10 @@ export function DriversScreen() {
                         onError={(e) => {
                           const imgElement = e.currentTarget as HTMLImageElement;
                           const fallbackImages = [
-                            `${API_BASE}/driver-faces/${driver.id}2.jpg`,
-                            `${API_BASE}/driver-faces/${driver.id}3.jpg`,
-                            `${API_BASE}/driver-faces/${driver.id}.jpg`,
-                            `${API_BASE}/driver-faces/${driver.id}.png`,
+                            `${API_BASE}/debug-driver-files/${driver.id}2.jpg`,
+                            `${API_BASE}/debug-driver-files/${driver.id}3.jpg`,
+                            `${API_BASE}/debug-driver-files/${driver.id}.jpg`,
+                            `${API_BASE}/debug-driver-files/${driver.id}.png`,
                             'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
                           ];
                           

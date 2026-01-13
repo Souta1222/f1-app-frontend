@@ -252,35 +252,36 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     const [currentAttempt, setCurrentAttempt] = useState(0);
     
     // Try multiple image naming patterns - USING BACKEND URL
-    const getImageSources = () => {
-      const sources = [];
+    // In RaceDetailsScreen.tsx, update the getImageSources() function:
+const getImageSources = () => {
+    const sources = [];
+    
+    if (id) {
+      // Use the correct directory: /debug-driver-files/
+      sources.push(`${API_BASE}/debug-driver-files/${id}1.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}2.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}3.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}1.png`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}2.png`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}3.png`);
       
-      if (id) {
-        // Try with numbers 1, 2, 3 first (most likely)
-        sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${id}1.png`);
-        sources.push(`${API_BASE}/driver-faces/${id}2.png`);
-        sources.push(`${API_BASE}/driver-faces/${id}3.png`);
-        
-        // Then try without numbers
-        sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${id}.png`);
-      }
-      
-      if (driverName) {
-        // Fallback: try with formatted driver name
-        const formattedName = formatDriverNameForImage(driverName);
-        sources.push(`${API_BASE}/driver-faces/${formattedName}1.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${formattedName}2.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${formattedName}3.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${formattedName}.jpg`);
-        sources.push(`${API_BASE}/driver-faces/${formattedName}.png`);
-      }
-      
-      return sources;
-    };
+      // Try without numbers
+      sources.push(`${API_BASE}/debug-driver-files/${id}.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${id}.png`);
+    }
+    
+    if (driverName) {
+      // Fallback: try with formatted driver name
+      const formattedName = formatDriverNameForImage(driverName);
+      sources.push(`${API_BASE}/debug-driver-files/${formattedName}1.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${formattedName}2.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${formattedName}3.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${formattedName}.jpg`);
+      sources.push(`${API_BASE}/debug-driver-files/${formattedName}.png`);
+    }
+    
+    return sources;
+  };
     
     const imageSources = useMemo(() => getImageSources(), [id, driverName]);
     const src = imageSources[currentAttempt];
