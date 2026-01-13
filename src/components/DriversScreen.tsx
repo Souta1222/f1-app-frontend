@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Camera, Upload, X, Sparkles, Filter } from 'lucide-react';
+import { Search, Camera, Upload, X, Sparkles, Filter, Trophy } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -173,7 +173,6 @@ export function DriversScreen() {
               nationality: driver.country || driver.Nationality || "Unknown",
               number: String(driver.number || "0"),
               age: Number(driver.age || 0),
-              // 🟢 KEY FIXES: Map backend keys correctly
               f1_debut: Number(driver.f1_debut || driver.debut || 0),
               world_champs: Number(driver.world_champs || 0),
               race_starts: Number(driver.starts || 0),
@@ -381,23 +380,23 @@ export function DriversScreen() {
                     <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>{driver.team}</span>
                   </div>
                   
-                  {/* 🟢 STATS GRID - Now displays real data */}
-                  <div className="grid grid-cols-2 gap-y-1 gap-x-1 mt-3">
-                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                        <span>🏆</span>
-                        <span className="font-medium">{driver.world_champs}</span>
+                  {/* 🟢 STATS GRID - REPLACED EMOJIS WITH TEXT */}
+                  <div className={`grid grid-cols-2 gap-y-2 gap-x-2 mt-3 pt-3 border-t border-dashed ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
+                    <div className="flex flex-col">
+                        <span className={`text-[9px] uppercase tracking-widest font-bold ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>Wins</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{driver.wins}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                        <span>🏁</span>
-                        <span className="font-medium">{driver.wins}</span>
+                    <div className="flex flex-col">
+                        <span className={`text-[9px] uppercase tracking-widest font-bold ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>Podiums</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{driver.podiums}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                        <span>🍾</span>
-                        <span className="font-medium">{driver.podiums}</span>
+                    <div className="flex flex-col">
+                        <span className={`text-[9px] uppercase tracking-widest font-bold ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>Poles</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{driver.poles}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                        <span>⚡</span>
-                        <span className="font-medium">{driver.poles}</span>
+                    <div className="flex flex-col">
+                        <span className={`text-[9px] uppercase tracking-widest font-bold ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>Champs</span>
+                        <span className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>{driver.world_champs}</span>
                     </div>
                   </div>
 
@@ -441,23 +440,23 @@ export function DriversScreen() {
                         </div>
                     </div>
                     
-                    {/* Stats in Dialog */}
+                    {/* 🟢 FIXED: CLEAR STATS LABELS IN DIALOG */}
                     <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-                            <div className="text-lg">🏆</div>
-                            <div className="text-xs font-bold">{selectedDriver.world_champs}</div>
+                        <div className={`p-2 rounded-lg border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className={`text-[8px] font-black uppercase mb-1 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>TITLES</div>
+                            <div className="text-sm font-black">{selectedDriver.world_champs}</div>
                         </div>
-                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-                            <div className="text-lg">🏁</div>
-                            <div className="text-xs font-bold">{selectedDriver.wins}</div>
+                        <div className={`p-2 rounded-lg border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className={`text-[8px] font-black uppercase mb-1 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</div>
+                            <div className="text-sm font-black">{selectedDriver.wins}</div>
                         </div>
-                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-                            <div className="text-lg">🍾</div>
-                            <div className="text-xs font-bold">{selectedDriver.podiums}</div>
+                        <div className={`p-2 rounded-lg border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className={`text-[8px] font-black uppercase mb-1 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>PODIUMS</div>
+                            <div className="text-sm font-black">{selectedDriver.podiums}</div>
                         </div>
-                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-                            <div className="text-lg">⚡</div>
-                            <div className="text-xs font-bold">{selectedDriver.poles}</div>
+                        <div className={`p-2 rounded-lg border ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className={`text-[8px] font-black uppercase mb-1 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>POLES</div>
+                            <div className="text-sm font-black">{selectedDriver.poles}</div>
                         </div>
                     </div>
 
