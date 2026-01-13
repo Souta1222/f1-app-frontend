@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Flag, Trophy, Medal, Info, TrendingUp, BrainCircuit, User, Crown, X, BarChart3 } from 'lucide-react';
+import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
 import { drivers } from '../lib/data'; 
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
@@ -120,7 +120,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<RaceResult | null>(null);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // 4. Fetch Effect - RESTORED ORIGINAL LOGIC
   useEffect(() => {
@@ -243,13 +242,12 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   // --- STYLES ---
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
-    : { backgroundColor: '#E2E8F0', backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '24px 24px', color: '#1e293b' };
+    : { backgroundColor: '#f0f2f5', color: '#0f172a' };
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image - IMPROVED WITH ERROR HANDLING
   // Helper for Image - FIXED PATH
-const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
+  const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
     // Try multiple image sources - FIXED PATH
@@ -302,7 +300,7 @@ const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefi
         </div>
 
         {/* SCROLLABLE CONTENT AREA */}
-        <div className="flex-grow overflow-y-auto pb-24">
+        <div className="flex-grow overflow-y-auto">
           <div className="px-4 py-6 space-y-3">
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20">
