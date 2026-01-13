@@ -192,7 +192,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
       {/* --- HEADER --- */}
       {/* 🟢 FIXED: Added z-40 and transform to force stacking context */}
       <div 
-        className="sticky top-0 z-40 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
+        className="sticky top-0 z-1000 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
         style={{ 
             background: 'linear-gradient(to right, #7f1d1d, #450a0a)',
             transform: 'translateZ(0)' // Fix for iOS Safari sticky issues
