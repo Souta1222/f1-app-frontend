@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
 import { drivers } from '../lib/data'; 
 // @ts-ignore
-import { useTheme } from './../components/ThemeContext.tsx'; 
+import { getDriverImage } from '../lib/images';
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -254,32 +254,22 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     // Try multiple image naming patterns - USING BACKEND URL
     // In RaceDetailsScreen.tsx, update the getImageSources() function:
     // In getImageSources() function:
-const getImageSources = () => {
-    const sources = [];
-    
-    if (id) {
-      // Use CORRECT path: /driver-faces/
-      sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}1.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}2.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}3.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}.png`);
-    }
-    
-    if (driverName) {
-      const formattedName = formatDriverNameForImage(driverName);
-      sources.push(`${API_BASE}/driver-faces/${formattedName}1.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${formattedName}2.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${formattedName}3.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${formattedName}.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${formattedName}.png`);
-    }
-    
-    return sources;
-  };
+    const getImageSources = () => {
+        const sources = [];
+        
+        if (id) {
+          // Use the centralized utility
+          sources.push(getDriverImage(id));
+          
+          // Also try variations
+          sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
+          sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
+          sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
+          sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
+        }
+        
+        return sources;
+      };
     
     const imageSources = useMemo(() => getImageSources(), [id, driverName]);
     const src = imageSources[currentAttempt];
