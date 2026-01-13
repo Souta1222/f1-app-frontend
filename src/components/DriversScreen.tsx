@@ -68,9 +68,8 @@ interface Driver {
 }
 
 // 🟢 REFINED COMPONENT: HybridSecureImage
-// Tries to fetch securely (for remote/ngrok), falls back to standard (for local), then placeholder
 const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
-  const [imageSrc, setImageSrc] = useState<string | null>(null); // Start null to show loading or nothing
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
@@ -79,7 +78,6 @@ const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, 
 
     const fetchImage = async () => {
       try {
-        // 1. Try fetching with the special Ngrok header (Fixes Mobile/Remote)
         const response = await fetch(src, {
           headers: { 'ngrok-skip-browser-warning': 'true' },
           mode: 'cors'
@@ -93,10 +91,8 @@ const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, 
         if (isMounted) setImageSrc(objectUrl);
 
       } catch (err) {
-        // 2. If secure fetch fails (CORS/Network), fall back to direct URL
-        // This fixes Localhost where you might have cookies/cache
         if (isMounted) {
-            console.warn(`Secure load failed for ${src}, falling back to direct URL.`);
+            // console.warn(`Secure load failed for ${src}, falling back to direct URL.`);
             setImageSrc(src);
         }
       }
@@ -110,17 +106,14 @@ const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, 
     };
   }, [src]);
 
-  // 3. Fallback handler for the standard <img> tag
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (!isError) {
-        setIsError(true);
-        // Final fallback to placeholder
-        e.currentTarget.src = 'https://via.placeholder.com/300x400/333333/ffffff?text=No+Photo';
+      setIsError(true);
+      e.currentTarget.src = 'https://via.placeholder.com/300x400/333333/ffffff?text=No+Photo';
     }
   };
 
   if (!imageSrc) {
-     // Show a placeholder or loading state while deciding
      return <div className={`bg-gray-200 animate-pulse ${className}`} />;
   }
 
@@ -182,12 +175,13 @@ export function DriversScreen() {
               number: String(driver.number || "0"),
               age: Number(driver.age || 0),
               f1_debut: Number(driver.debut || 0),
-              world_champs: Number(driver.championships || 0),
+              // 🟢 FIX: Ensure world_champs is mapped correctly from API response
+              world_champs: Number(driver.world_champs !== undefined ? driver.world_champs : (driver.championships || 0)),
               race_starts: Number(driver.starts || 0),
               wins: Number(driver.wins || 0),
               podiums: Number(driver.podiums || 0),
               poles: Number(driver.poles || 0),
-              status: driver.status || (driver.F1_Retired === 'Active' ? 'Active' : 'Retired'),
+              status: driver.status || (driver.active ? 'Active' : 'Retired'),
               teamColor: teamColors[team] || teamColors.default,
               stats: {
                 'Wins': Number(driver.wins || 0),
@@ -256,10 +250,7 @@ export function DriversScreen() {
         const data = await response.json();
 
         if (data.success && data.driver_id) {
-            // Find matched driver in existing list
             let matchedDriver = driversList.find(d => d.id === data.driver_id);
-            
-            // Build the driver object
             const enhancedDriver = {
                 ...matchedDriver,
                 id: data.driver_id,
@@ -281,7 +272,7 @@ export function DriversScreen() {
             } as Driver;
 
             setSelectedDriver(enhancedDriver);
-            alert(`✅ Match found: ${enhancedDriver.name} (${data.confidence})`);
+            // alert(`✅ Match found: ${enhancedDriver.name} (${data.confidence})`);
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
           setSelectedDriver(null);
@@ -373,7 +364,7 @@ export function DriversScreen() {
               <div key={driver.id} className={`rounded-xl border overflow-hidden transition-all relative group ${isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-white shadow-sm'} ${driver.status !== 'Active' ? 'opacity-80' : ''}`}>
                 <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
                   
-                  {/* 🟢 USE HYBRID SECURE IMAGE HERE */}
+                  {/* Image */}
                   <HybridSecureImage 
                     src={`${API_BASE}/driver-faces/${driver.id}.png`}
                     alt={driver.name}
@@ -391,10 +382,27 @@ export function DriversScreen() {
                     <div className="w-1 h-3 rounded-full" style={{ backgroundColor: driver.teamColor }} />
                     <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>{driver.team}</span>
                   </div>
-                  <div className="flex gap-3 mt-2 text-[10px]">
-                    <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>🏆 {driver.world_champs}</span>
-                    <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>🏁 {driver.wins}</span>
+                  
+                  {/* 🟢 STATS GRID */}
+                  <div className="grid grid-cols-2 gap-y-1 gap-x-1 mt-3">
+                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                        <span>🏆</span>
+                        <span className="font-medium">{driver.world_champs}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                        <span>🏁</span>
+                        <span className="font-medium">{driver.wins}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                        <span>🍾</span>
+                        <span className="font-medium">{driver.podiums}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                        <span>⚡</span>
+                        <span className="font-medium">{driver.poles}</span>
+                    </div>
                   </div>
+
                 </div>
               </div>
             ))}
@@ -427,7 +435,6 @@ export function DriversScreen() {
                   <div className={`rounded-xl p-4 border mt-2 ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="flex items-center gap-4 mb-4">
                         <div className="w-16 h-16 rounded-full overflow-hidden">
-                             {/* 🟢 USE HYBRID SECURE IMAGE IN DIALOG */}
                              <HybridSecureImage src={`${API_BASE}/driver-faces/${selectedDriver.id}.png`} alt={selectedDriver.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
@@ -435,6 +442,27 @@ export function DriversScreen() {
                             <p className="text-xs text-neutral-500">{selectedDriver.team}</p>
                         </div>
                     </div>
+                    
+                    {/* Stats in Dialog */}
+                    <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                            <div className="text-lg">🏆</div>
+                            <div className="text-xs font-bold">{selectedDriver.world_champs}</div>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                            <div className="text-lg">🏁</div>
+                            <div className="text-xs font-bold">{selectedDriver.wins}</div>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                            <div className="text-lg">🍾</div>
+                            <div className="text-xs font-bold">{selectedDriver.podiums}</div>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
+                            <div className="text-lg">⚡</div>
+                            <div className="text-xs font-bold">{selectedDriver.poles}</div>
+                        </div>
+                    </div>
+
                     <Button onClick={() => { setSearchQuery(selectedDriver.name); setUploadDialogOpen(false); setUploadedImage(null); setSelectedDriver(null); }} className="w-full bg-red-600 text-white font-bold rounded-xl">View Full Profile</Button>
                   </div>
                 )}
