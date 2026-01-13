@@ -12,7 +12,7 @@ interface NgrokImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   alt: string;
 }
 
-// 🟢 2. NGROK BYPASS IMAGE COMPONENT (Fixed Types)
+// 🟢 2. NGROK BYPASS IMAGE COMPONENT
 const NgrokImage: React.FC<NgrokImageProps> = ({ src, alt, className, style, onError }) => {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
 
@@ -126,10 +126,16 @@ const getTeamColor = (team: string) => {
   return '#666666';
 };
 
+// Simple ID Helper
+const getDriverIdByName = (name: string) => {
+    // This is a simple fallback if the API doesn't provide an ID directly for older seasons
+    // For 2026 predictions, the API logic handles it.
+    if (!name) return null;
+    return name.substring(0, 3).toUpperCase(); 
+}
+
 const formatDriverNameForImage = (driverName: string): string => {
   if (!driverName) return '';
-  // Convert "Max Verstappen" -> "VER" (Simple approximation) or "Max_Verstappen"
-  // Ideally, backend should provide ID. This is a fallback.
   return driverName.substring(0, 3).toUpperCase();
 };
 
@@ -174,6 +180,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         let rawData: any = null;
 
         if (is2026) {
+            // 🟢 MATCH PREDICTION FETCH LOGIC EXACTLY
             const raceInfo = SCHEDULE_2026.find(r => r.round === parseInt(round));
             const circuitName = raceInfo ? raceInfo.circuit : "Unknown";
             
@@ -200,81 +207,69 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         const cleanData: RaceResult[] = [];
         
         if (Array.isArray(rawData)) {
-            let positionCounter = 1;
+            // 🟢 APPLY THE SAME MAPPING LOGIC AS PredictionResultScreen
+            const mapped = rawData.map((item: any) => {
+                 const isPred = is2026 || item.probability !== undefined;
+                 
+                 // EXTRACT DRIVER INFO CORRECTLY FOR PREDICTIONS
+                 // The backend returns driver object structure for /predict
+                 let driverName = "Unknown";
+                 let driverId = null;
+                 let teamName = "Unknown";
 
-            for (const item of rawData) {
-                if (item && typeof item === 'object') {
-                    const isPred = item.probability !== undefined || is2026;
+                 if (isPred && item.driver && typeof item.driver === 'object') {
+                     driverName = item.driver.name;
+                     driverId = item.driver.id; 
+                     teamName = item.driver.team;
+                 } else {
+                     // Historical Fallback
+                     driverName = String(item.Driver || item.driver || 'Unknown');
+                     teamName = String(item.Team || item.team || 'Unknown');
+                     driverId = getDriverIdByName(driverName);
+                 }
+
+                 if (isPred) {
+                    const winVal = parseFloat(item.probability);
                     
-                    // 🟢 DRIVER DATA EXTRACTION
-                    // For predictions, API sends: driver: { name, id, team }
-                    // For historical, API sends: Driver: "Name"
+                    // Same Logic for Probabilities
+                    let podiumVal = item.podium_probability 
+                        ? parseFloat(item.podium_probability) 
+                        : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
                     
-                    let driverName = "Unknown";
-                    let driverId = null;
-                    let teamName = "Unknown";
+                    let pointsVal = item.points_probability
+                        ? parseFloat(item.points_probability)
+                        : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
 
-                    if (isPred && item.driver && typeof item.driver === 'object') {
-                        driverName = item.driver.name;
-                        driverId = item.driver.id; // API provides ID!
-                        teamName = item.driver.team;
-                    } else {
-                        driverName = String(item.Driver || item.driver || 'Unknown');
-                        teamName = String(item.Team || item.team || 'Unknown');
-                        // No ID in historical usually, relies on fallback
-                    }
+                    if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
+                    if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
 
-                    // 🟢 2026 FILTERING LOGIC
-                    // We removed the 'isDriverRetired' function because it relied on external files.
-                    // Instead, we trust the Backend's /predict endpoint to only return Active drivers.
-                    // If you REALLY need to filter specific names here, add:
-                    // const RETIRED_NAMES = ["Lewis Hamilton", "Fernando Alonso"]; 
-                    // if (is2026 && RETIRED_NAMES.includes(driverName)) continue;
-
-                    if (is2026 && item.probability) {
-                        const winVal = parseFloat(item.probability);
-                        
-                        let podiumVal = item.podium_probability 
-                            ? parseFloat(item.podium_probability) 
-                            : Math.min(99, winVal * 2.5 + (positionCounter <= 3 ? 40 : 0));
-                        
-                        let pointsVal = item.points_probability
-                            ? parseFloat(item.points_probability)
-                            : Math.min(99, podiumVal * 1.2 + (positionCounter <= 10 ? 30 : 0));
-
-                        cleanData.push({
-                            position: positionCounter, // Use local counter
-                            driver: driverName,
-                            driverId: driverId,
-                            team: teamName,
-                            probability: item.probability,
-                            podiumProbability: podiumVal.toFixed(1),
-                            pointsProbability: pointsVal.toFixed(1),
-                            reasons: item.reasons || { positive: [], negative: [] },
-                            status: 'Predicted',
-                            details: item.reasons?.positive?.[0] || "AI Analysis pending"
-                        });
-                        positionCounter++;
-                    } else {
-                        // Historical Data
-                        cleanData.push({
-                            position: parseInt(item.Position || item.position || '0'),
-                            driver: driverName,
-                            driverId: driverId, 
-                            team: teamName,
-                            points: item.Points ? parseFloat(item.Points) : undefined,
-                            status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
-                            wins: item.wins ? parseInt(item.wins) : undefined,
-                            probability: isPred ? String(item.probability) : undefined,
-                            podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
-                            pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
-                            reasons: item.reasons,
-                            details: isPred ? (item.reasons?.positive?.[0] || "AI Analysis pending") : item.details
-                        });
-                    }
-                }
-            }
-            setFetchedResults(cleanData);
+                    return {
+                        position: item.position,
+                        driver: driverName,
+                        driverId: driverId,
+                        team: teamName,
+                        probability: item.probability + "%", // Add % for display consistency
+                        podiumProbability: podiumVal.toFixed(1) + "%",
+                        pointsProbability: pointsVal.toFixed(1) + "%",
+                        reasons: item.reasons || { positive: [], negative: [] },
+                        status: 'Predicted',
+                        details: item.reasons?.positive?.[0] || "AI Analysis pending"
+                    };
+                 } else {
+                    // Historical Mapping (Unchanged)
+                    return {
+                        position: parseInt(item.Position || item.position || '0'),
+                        driver: driverName,
+                        driverId: driverId, 
+                        team: teamName,
+                        points: item.Points ? parseFloat(item.Points) : undefined,
+                        status: String(item.status || item.Status || 'Finished'),
+                        wins: item.wins ? parseInt(item.wins) : undefined,
+                        details: item.details
+                    };
+                 }
+            });
+            setFetchedResults(mapped);
         }
       } catch (e) { 
         console.error("Fetch Error:", e); 
@@ -306,11 +301,9 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     
     let src = null;
     if (id && !imgError) {
-      // ✅ Corrected: matches backend endpoint "/driver-faces/{ID}.png"
       src = `${API_BASE}/driver-faces/${id}.png`;
     } else if (driverName && !imgError) {
-      // Fallback: Try 3 letter code or formatted name
-      const formatted = driverName.substring(0, 3).toUpperCase();
+      const formatted = formatDriverNameForImage(driverName);
       src = `${API_BASE}/driver-faces/${formatted}.png`;
     }
     
@@ -392,7 +385,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                         <div className="mt-3 font-black text-4xl">1</div>
                                         <div className="text-xs font-black uppercase text-center leading-tight">{podium[0].driver.split(' ').pop()}</div>
                                         <div className="mt-1 px-2 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">
-                                            {podium[0].probability}%
+                                            {podium[0].probability}
                                         </div>
                                     </div>
                                 </div>
@@ -439,7 +432,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             <div className="text-right">
                                 {is2026 ? (
                                     <div className="font-mono font-bold text-sm text-purple-500">
-                                        {result.probability}% <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WIN</span>
+                                        {result.probability} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WIN</span>
                                     </div>
                                 ) : (
                                     result.wins !== undefined && result.wins > 0 ? (
@@ -498,15 +491,15 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             <div className={`grid grid-cols-3 gap-2 mb-8`}>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1"><Trophy className="w-3 h-3" /> Win</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.probability || '0'}%</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.probability}</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1"><BarChart3 className="w-3 h-3" /> Podium</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.podiumProbability || '0'}%</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.podiumProbability}</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1"><TrendingUp className="w-3 h-3" /> Points</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.pointsProbability || '0'}%</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.pointsProbability}</div>
                 </div>
             </div>
             <div>
