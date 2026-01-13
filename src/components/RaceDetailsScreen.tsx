@@ -253,23 +253,25 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
     
     // Try multiple image naming patterns - USING BACKEND URL
     // In RaceDetailsScreen.tsx, update the getImageSources() function:
-    // In getImageSources() function:
-    const getImageSources = () => {
-        const sources = [];
-        
-        if (id) {
-          // Use the centralized utility
-          sources.push(getDriverImage(id));
-          
-          // Also try variations
-          sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
-          sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
-          sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
-          sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
-        }
-        
-        return sources;
-      };
+    // In the getImageSources() function:
+    // In the getImageSources() function:
+const getImageSources = () => {
+    const sources = [];
+    
+    if (id) {
+      // 🎯 ONLY use /driver-faces/ URLs
+      sources.push(`${API_BASE}/driver-faces/${id}.png`);
+      sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
+      sources.push(`${API_BASE}/driver-faces/${id}1.png`);
+      sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
+      sources.push(`${API_BASE}/driver-faces/${id}2.png`);
+      sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
+      sources.push(`${API_BASE}/driver-faces/${id}3.png`);
+      sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
+    }
+    
+    return sources;
+  };
     
     const imageSources = useMemo(() => getImageSources(), [id, driverName]);
     const src = imageSources[currentAttempt];
