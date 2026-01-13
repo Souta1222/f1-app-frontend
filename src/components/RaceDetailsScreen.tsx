@@ -7,6 +7,47 @@ import { useTheme } from './../components/ThemeContext.tsx';
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
+// 🟢 NEW: NGROK BYPASS IMAGE COMPONENT
+// This fetches the image using JS headers to skip the Ngrok warning page
+const NgrokImage = ({ src, alt, className, style, onError }: any) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!src || !src.startsWith('http')) {
+      setImgSrc(src);
+      return;
+    }
+
+    let isMounted = true;
+    fetch(src, {
+      headers: { 
+        'ngrok-skip-browser-warning': 'true',
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      if (isMounted) setImgSrc(URL.createObjectURL(blob));
+    })
+    .catch(() => {
+      if (isMounted) setImgSrc(src); // Fallback to direct link
+    });
+
+    return () => { isMounted = false; };
+  }, [src]);
+
+  return (
+    <img 
+      src={imgSrc || src} 
+      alt={alt} 
+      className={className} 
+      style={style}
+      onError={onError}
+    />
+  );
+};
+
 // --- SHARED 2026 SCHEDULE ---
 const SCHEDULE_2026 = [
   { "round": 1, "circuit": "Melbourne, Australia" },
@@ -246,30 +287,30 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image - FIXED PATH
+  // Helper for Image - FIXED PATH & NGROK BYPASS
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
     // Try multiple image sources - FIXED PATH
     let src = null;
     if (id && !imgError) {
-      // Try with the official ID first - FIXED: use driver_faces folder
-      src = `/driver_faces/${id}.png`;
+      // Point to backend endpoint directly
+      src = `${API_BASE}/driver_image/${id}`;
     } else if (driverName && !imgError) {
-      // Fallback: try with formatted driver name - FIXED: use driver_faces folder
+      // Fallback
       const formattedName = formatDriverNameForImage(driverName);
-      src = `/driver_faces/${formattedName}.png`;
+      src = `${API_BASE}/driver_image/${formattedName}`;
     }
     
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src && !imgError ? (
-            <img 
+            // 🟢 UPDATED: Use NgrokImage component
+            <NgrokImage 
               src={src} 
               alt={alt} 
               className="w-full h-full object-cover object-top" 
               onError={() => setImgError(true)}
-              loading="lazy"
             />
         ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">

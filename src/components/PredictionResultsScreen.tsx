@@ -148,7 +148,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   const podium = predictions.slice(0, 3);
   
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
-    const src = id ? `/drivers/${id}.png` : null;
+    const src = id ? `/driver_faces/${id}.png` : null;
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src ? (
