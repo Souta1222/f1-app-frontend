@@ -35,6 +35,21 @@ const statusOptions = [
   { label: 'Retired', value: 'retired' },
 ];
 
+// 🟢 FIXED: Team colors object (moved outside component)
+const teamColors: Record<string, string> = {
+  'Red Bull': '#3671C6',
+  'McLaren': '#FF8000',
+  'Mercedes': '#27F4D2',
+  'Ferrari': '#E8002D',
+  'Williams': '#64C4FF',
+  'Aston Martin': '#229971',
+  'Racing Bulls': '#6692FF',
+  'Haas': '#B6BABD',
+  'Kick Sauber': '#52E252',
+  'Alpine': '#FF87BC',
+  'default': '#888888'
+};
+
 interface Driver {
   id: string;
   name: string;
@@ -114,49 +129,68 @@ export function DriversScreen() {
     }));
   };
 
-  // 🟢 UPDATED: Fetch drivers and their images
+  // 🟢 FIXED: Fetch drivers and their images
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
+        console.log("🔄 Fetching drivers from API...");
         const response = await fetch(`${API_BASE}/drivers/all`, {
           headers: {
             'ngrok-skip-browser-warning': 'true',
           },
         });
+        
+        console.log("📡 Response status:", response.status);
+        
         if (response.ok) {
-          const data = await response.json();
+          const result = await response.json();
+          console.log("📦 Raw API response:", result);
           
-          // Add team colors
-          const teamColors: Record<string, string> = {
-            'Red Bull': '#3671C6',
-            'McLaren': '#FF8000',
-            'Mercedes': '#27F4D2',
-            'Ferrari': '#E8002D',
-            'Williams': '#64C4FF',
-            'Aston Martin': '#229971',
-            'Racing Bulls': '#6692FF',
-            'Haas': '#B6BABD',
-            'Kick Sauber': '#52E252',
-            'Alpine': '#FF87BC',
-            'default': '#888888'
-          };
+          const driversArray = result.drivers || [];
+          console.log(`📊 Found ${driversArray.length} drivers`);
           
-          const enhancedDrivers = data.map((driver: any) => ({
-            ...driver,
-            teamColor: teamColors[driver.team] || teamColors.default,
-            stats: {
-              'Wins': driver.wins,
-              'Podiums': driver.podiums,
-              'Poles': driver.poles,
-              'Starts': driver.race_starts
-            }
-          }));
+          if (driversArray.length === 0) {
+            console.warn("⚠️ No drivers returned from API, using fallback");
+            setDriversList(getFallbackDrivers());
+            setLoading(false);
+            return;
+          }
           
-          setDriversList(enhancedDrivers);
+          // Map backend fields to frontend fields
+          const mappedDrivers = driversArray.map((driver: any) => {
+            const team = driver.team || driver.Team || "Unknown";
+            
+            return {
+              id: driver.id || driver.Abbr || "UNK",
+              name: driver.name || driver.Full_Name || "Unknown",
+              team: team,
+              nationality: driver.country || driver.Nationality || driver.nationality || "Unknown",
+              number: String(driver.number || driver.No || driver.No_ || "0"),
+              age: Number(driver.age || driver.Age || 0),
+              f1_debut: Number(driver.debut || driver.F1_Debut || driver.f1_debut || 0),
+              world_champs: Number(driver.championships || driver.World_Champs || 0),
+              race_starts: Number(driver.starts || driver.Race_Starts || 0),
+              wins: Number(driver.wins || driver.Wins || 0),
+              podiums: Number(driver.podiums || driver.Podiums || 0),
+              poles: Number(driver.poles || driver.Poles || 0),
+              status: driver.status || driver.F1_Retired || "Active",
+              teamColor: teamColors[team] || teamColors.default,
+              stats: {
+                'Wins': Number(driver.wins || driver.Wins || 0),
+                'Podiums': Number(driver.podiums || driver.Podiums || 0),
+                'Poles': Number(driver.poles || driver.Poles || 0),
+                'Starts': Number(driver.starts || driver.Race_Starts || 0)
+              }
+            };
+          });
+          
+          console.log("✅ Mapped drivers:", mappedDrivers);
+          setDriversList(mappedDrivers);
           
           // 🟢 NEW: Pre-fetch image availability for each driver
-          enhancedDrivers.forEach(async (driver: Driver) => {
+          mappedDrivers.forEach(async (driver: Driver) => {
             try {
+              console.log(`🖼️ Fetching images for ${driver.id}...`);
               const imagesResponse = await fetch(`${API_BASE}/drivers/${driver.id}/images`, {
                 headers: {
                   'ngrok-skip-browser-warning': 'true',
@@ -165,9 +199,11 @@ export function DriversScreen() {
               
               if (imagesResponse.ok) {
                 const imagesData = await imagesResponse.json();
+                console.log(`📸 Images data for ${driver.id}:`, imagesData);
+                
                 if (imagesData.images && imagesData.images.length > 0) {
                   const imageUrls = imagesData.images.map((img: any) => 
-                    img.full_url || `/driver_faces/${img.filename}`
+                    img.full_url || `${API_BASE}/driver_faces/${img.filename}` || `/driver_faces/${img.filename}`
                   );
                   
                   setDriverImages(prev => ({
@@ -182,10 +218,12 @@ export function DriversScreen() {
           });
           
         } else {
-          console.error('Failed to fetch drivers from API');
+          console.error('❌ Failed to fetch drivers from API');
+          setDriversList(getFallbackDrivers());
         }
       } catch (error) {
-        console.error('Error fetching drivers:', error);
+        console.error('🔥 Error fetching drivers:', error);
+        setDriversList(getFallbackDrivers());
       } finally {
         setLoading(false);
       }
@@ -193,6 +231,63 @@ export function DriversScreen() {
     
     fetchDrivers();
   }, []);
+
+  // 🟢 FIXED: Fallback drivers function
+  const getFallbackDrivers = (): Driver[] => {
+    return [
+      {
+        id: "VER",
+        name: "Max Verstappen",
+        team: "Red Bull",
+        nationality: "Dutch",
+        number: "1",
+        age: 28,
+        f1_debut: 2015,
+        world_champs: 4,
+        race_starts: 233,
+        wins: 71,
+        podiums: 127,
+        poles: 48,
+        status: "Active",
+        teamColor: teamColors['Red Bull'],
+        stats: { Wins: 71, Podiums: 127, Poles: 48, Starts: 233 }
+      },
+      {
+        id: "NOR",
+        name: "Lando Norris",
+        team: "McLaren",
+        nationality: "British",
+        number: "4",
+        age: 26,
+        f1_debut: 2019,
+        world_champs: 1,
+        race_starts: 152,
+        wins: 11,
+        podiums: 44,
+        poles: 16,
+        status: "Active",
+        teamColor: teamColors['McLaren'],
+        stats: { Wins: 11, Podiums: 44, Poles: 16, Starts: 152 }
+      },
+      {
+        id: "LEC",
+        name: "Charles Leclerc",
+        team: "Ferrari",
+        nationality: "Monégasque",
+        number: "16",
+        age: 28,
+        f1_debut: 2018,
+        world_champs: 0,
+        race_starts: 171,
+        wins: 8,
+        podiums: 50,
+        poles: 27,
+        status: "Active",
+        teamColor: teamColors['Ferrari'],
+        stats: { Wins: 8, Podiums: 50, Poles: 27, Starts: 171 }
+      }
+    ];
+  };
 
   // 🟢 UPDATED: Filter logic
   const filteredDrivers = useMemo(() => {
@@ -231,6 +326,7 @@ export function DriversScreen() {
       formData.append('file', file);
 
       try {
+        console.log("📤 Uploading image for identification...");
         const response = await fetch(`${API_BASE}/identify-driver`, {
           method: 'POST',
           headers: {
@@ -239,21 +335,22 @@ export function DriversScreen() {
           body: formData,
         });
         const data = await response.json();
+        console.log("📥 Identification response:", data);
 
         if (data.success && data.driver_id) {
           if (data.driver_info) {
             const enhancedDriver = {
               ...data.driver_info,
-              teamColor: teams.find(t => t.value === data.driver_info.team)?.color || '#888888',
+              teamColor: teamColors[data.driver_info.team] || teamColors.default,
               stats: {
-                'Wins': data.driver_info.wins,
-                'Podiums': data.driver_info.podiums,
-                'Poles': data.driver_info.poles,
-                'Starts': data.driver_info.race_starts
+                'Wins': data.driver_info.wins || 0,
+                'Podiums': data.driver_info.podiums || 0,
+                'Poles': data.driver_info.poles || 0,
+                'Starts': data.driver_info.race_starts || 0
               },
               images: data.available_images || []
             };
-            setSelectedDriver(enhancedDriver);
+            setSelectedDriver(enhancedDriver as Driver);
             alert(`✅ Match found: ${data.driver_info.name} (${data.confidence})`);
           } else {
             const foundDriver = driversList.find(d => d.id === data.driver_id);
@@ -431,7 +528,8 @@ export function DriversScreen() {
         {/* Loading State */}
         {loading ? (
           <div className="text-center py-12">
-            <p className={isDark ? "text-neutral-500" : "text-slate-400"}>Loading drivers...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
+            <p className={`mt-2 ${isDark ? "text-neutral-500" : "text-slate-400"}`}>Loading drivers...</p>
           </div>
         ) : (
           <>
@@ -556,6 +654,9 @@ export function DriversScreen() {
             {filteredDrivers.length === 0 && (
               <div className="text-center py-12">
                 <p className={isDark ? "text-neutral-500" : "text-slate-400"}>No drivers found</p>
+                <p className={`text-xs mt-2 ${isDark ? "text-neutral-600" : "text-slate-500"}`}>
+                  Try adjusting your search or filters
+                </p>
               </div>
             )}
           </>
@@ -766,6 +867,11 @@ export function DriversScreen() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputMessage(e.target.value)} 
                 className="bg-neutral-800 border-neutral-700 text-white"
                 placeholder="Ask AI about drivers..."
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSendMessage();
+                  }
+                }}
               />
               <Button onClick={handleSendMessage} className="bg-red-600">
                 <Sparkles className="w-4 h-4" />
