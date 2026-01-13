@@ -116,7 +116,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [loading, setLoading] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<RaceResult | null>(null);
 
-  // 4. Fetch Effect
+  // 4. Fetch Effect - RESTORED ORIGINAL LOGIC
   useEffect(() => {
     if (!shouldFetch) return;
 
@@ -130,7 +130,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
         let rawData: any = null;
 
-        // 🟢 PREDICTION FETCH (2026)
+        // 🟢 PREDICTION FETCH (2026) - ORIGINAL LOGIC
         if (is2026) {
             const raceInfo = SCHEDULE_2026.find(r => r.round === parseInt(round));
             const circuitName = raceInfo ? raceInfo.circuit : "Unknown";
@@ -144,40 +144,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             if (res.ok) {
                 const data = await res.json();
                 rawData = data.predictions; 
-                
-                // Process predictions similar to PredictionResultsScreen
-                if (Array.isArray(rawData)) {
-                  const processedResults = rawData.map((item: any) => {
-                    const winVal = parseFloat(item.probability);
-                    
-                    // Fallback estimation for podium and points probabilities
-                    let podiumVal = item.podium_probability 
-                      ? parseFloat(item.podium_probability) 
-                      : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
-                    
-                    let pointsVal = item.points_probability
-                      ? parseFloat(item.points_probability)
-                      : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
-
-                    if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
-                    if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
-
-                    return {
-                      position: item.position,
-                      driver: item.driver.name,
-                      driverId: getDriverIdByName(item.driver.name),
-                      team: item.driver.team,
-                      probability: item.probability,
-                      podiumProbability: podiumVal.toFixed(1),
-                      pointsProbability: pointsVal.toFixed(1),
-                      reasons: item.reasons || { positive: [], negative: [] },
-                      status: 'Predicted',
-                      details: item.reasons?.positive?.[0] || "AI Analysis pending"
-                    };
-                  });
-                  setFetchedResults(processedResults);
-                  return;
-                }
             }
         } 
         // 🟢 RESULTS FETCH (2024/23)
@@ -190,36 +156,71 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         }
 
-        // Normalize Data (for non-2026)
+        // Normalize Data - WITH ENHANCED 2026 PROCESSING
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
                 if (item && typeof item === 'object') {
-                    const isPred = item.probability !== undefined;
-                    const driverName = isPred ? item.driver.name : String(item.Driver || item.driver || 'Unknown');
+                    const isPred = item.probability !== undefined || is2026;
+                    const driverName = isPred ? item.driver?.name : String(item.Driver || item.driver || 'Unknown');
                     
-                    cleanData.push({
-                        position: parseInt(item.Position || item.position || '0'),
-                        driver: driverName,
-                        driverId: getDriverIdByName(driverName), 
-                        team: isPred ? item.driver.team : String(item.Team || item.team || 'Unknown'),
-                        points: item.Points ? parseFloat(item.Points) : undefined,
-                        status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
-                        wins: item.wins ? parseInt(item.wins) : undefined,
-                        probability: isPred ? String(item.probability) : undefined,
-                        podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
-                        pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
-                        reasons: item.reasons,
-                        details: isPred 
-                            ? (item.reasons?.positive?.[0] || "AI Analysis pending") 
-                            : item.details
-                    });
+                    // For 2026 predictions, calculate additional probabilities like in PredictionResultsScreen
+                    if (is2026 && item.probability) {
+                        const winVal = parseFloat(item.probability);
+                        
+                        // Fallback estimation for podium and points probabilities (same as PredictionResultsScreen)
+                        let podiumVal = item.podium_probability 
+                            ? parseFloat(item.podium_probability) 
+                            : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
+                        
+                        let pointsVal = item.points_probability
+                            ? parseFloat(item.points_probability)
+                            : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
+
+                        if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
+                        if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+
+                        cleanData.push({
+                            position: parseInt(item.position || '0'),
+                            driver: driverName,
+                            driverId: getDriverIdByName(driverName),
+                            team: item.driver?.team || String(item.team || 'Unknown'),
+                            probability: item.probability,
+                            podiumProbability: podiumVal.toFixed(1),
+                            pointsProbability: pointsVal.toFixed(1),
+                            reasons: item.reasons || { positive: [], negative: [] },
+                            status: 'Predicted',
+                            details: item.reasons?.positive?.[0] || "AI Analysis pending"
+                        });
+                    } else {
+                        // For non-2026 data
+                        cleanData.push({
+                            position: parseInt(item.Position || item.position || '0'),
+                            driver: driverName,
+                            driverId: getDriverIdByName(driverName), 
+                            team: isPred ? item.driver?.team : String(item.Team || item.team || 'Unknown'),
+                            points: item.Points ? parseFloat(item.Points) : undefined,
+                            status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
+                            wins: item.wins ? parseInt(item.wins) : undefined,
+                            probability: isPred ? String(item.probability) : undefined,
+                            podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
+                            pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
+                            reasons: item.reasons,
+                            details: isPred 
+                                ? (item.reasons?.positive?.[0] || "AI Analysis pending") 
+                                : item.details
+                        });
+                    }
                 }
             }
             setFetchedResults(cleanData);
         }
-      } catch (e) { console.error("Fetch Error:", e); }
-      setLoading(false);
+      } catch (e) { 
+        console.error("Fetch Error:", e); 
+        // If fetch fails, still set loading to false
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchResults();
@@ -425,7 +426,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                 <Trophy className="w-3 h-3" /> Win
                             </div>
                             <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                {selectedPrediction.probability}%
+                                {selectedPrediction.probability || '0'}%
                             </div>
                         </div>
                         <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
