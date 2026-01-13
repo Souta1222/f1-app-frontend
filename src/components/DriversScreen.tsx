@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, Camera, Upload, X, Sparkles, Filter, Image as ImageIcon } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -12,22 +12,8 @@ import logo from '../styles/logo.png';
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 Image cache to avoid duplicate checks
-const imageCache: Record<string, string> = {};
-
-// 🟢 SMART IMAGE PATTERNS - SIMPLE FIRST
-const getDriverImagePatterns = (driverId: string): string[] => {
-  return [
-    `${API_BASE}/driver-faces/${driverId}.png`,   // Most common - simple PNG
-    `${API_BASE}/driver-faces/${driverId}.jpg`,   // Alternative simple JPG
-    `${API_BASE}/driver-faces/${driverId}1.png`,  // Numbered 1 PNG
-    `${API_BASE}/driver-faces/${driverId}1.jpg`,  // Numbered 1 JPG
-    `${API_BASE}/driver-faces/${driverId}2.png`,  // Numbered 2 PNG
-    `${API_BASE}/driver-faces/${driverId}2.jpg`,  // Numbered 2 JPG
-    `${API_BASE}/driver-faces/${driverId}3.png`,  // Numbered 3 PNG (RARE!)
-    `${API_BASE}/driver-faces/${driverId}3.jpg`,  // Numbered 3 JPG (RARE!)
-  ];
-};
+// 🟢 GLOBAL CACHE
+const imageCache = new Map<string, string>();
 
 // 🟢 Teams list
 const teams = [
@@ -101,142 +87,77 @@ export function DriversScreen() {
   const [inputMessage, setInputMessage] = useState('');
   const [driversList, setDriversList] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
-  const [driverImages, setDriverImages] = useState<Record<string, string[]>>({});
-  const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({});
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
-  // 🟢 SMART: Check if image exists before trying to load it
-  const checkImageExists = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  // 🟢 SMART: Get the first available image for a driver
-  const getBestDriverImage = async (driverId: string): Promise<string> => {
+  // 🟢 SIMPLE: Get driver image URL
+  const getDriverImage = (driverId: string): string => {
     // Check cache first
-    if (imageCache[driverId]) {
-      return imageCache[driverId];
+    if (imageCache.has(driverId)) {
+      return imageCache.get(driverId)!;
     }
-
-    const patterns = getDriverImagePatterns(driverId);
     
-    // Try each pattern in order
-    for (const pattern of patterns) {
-      const exists = await checkImageExists(pattern);
-      if (exists) {
-        imageCache[driverId] = pattern;
-        return pattern;
-      }
+    // Based on your logs, different drivers have different patterns
+    // We'll start with the MOST LIKELY pattern for each driver
+    
+    // Current F1 drivers usually have simple .png
+    const currentDrivers = ['VER', 'HAM', 'NOR', 'LEC', 'PIA', 'RUS', 'SAI', 'ALO', 'PER', 'STR', 'GAS', 'TSU', 'OCO', 'BOT', 'ZHO', 'MAG', 'HUL', 'ALB'];
+    
+    // Retired/historical drivers often have numbered .jpg
+    const retiredDrivers = ['WEB', 'HUN', 'FIT', 'ASC', 'LAU', 'HIL', 'MAN', 'STE', 'PRO', 'COU', 'BAR', 'ROS', 'VET', 'RAI', 'MAS', 'MSC'];
+    
+    let imageUrl;
+    
+    if (currentDrivers.includes(driverId)) {
+      // Current drivers: try .png first
+      imageUrl = `${API_BASE}/driver-faces/${driverId}.png`;
+    } else if (retiredDrivers.includes(driverId)) {
+      // Retired drivers: try numbered .jpg first
+      imageUrl = `${API_BASE}/driver-faces/${driverId}1.jpg`;
+    } else {
+      // Unknown: try simple .png first
+      imageUrl = `${API_BASE}/driver-faces/${driverId}.png`;
     }
-
-    // No image found, use placeholder
-    const placeholder = 'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo';
-    imageCache[driverId] = placeholder;
-    return placeholder;
+    
+    // Cache it
+    imageCache.set(driverId, imageUrl);
+    return imageUrl;
   };
 
-  // 🟢 Get driver image - UPDATED WITH CACHE
-  const getDriverImage = (driverId: string, driverName?: string) => {
-    const images = driverImages[driverId] || [];
-    const currentIndex = currentImageIndex[driverId] || 0;
+  // 🟢 Handle image loading error
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, driverId: string) => {
+    const imgElement = e.currentTarget as HTMLImageElement;
+    const currentSrc = imgElement.src;
     
-    if (images.length > 0 && images[currentIndex]) {
-      return images[currentIndex];
+    console.log(`🔄 Image failed: ${currentSrc}, trying alternatives...`);
+    
+    // Try different patterns based on current URL
+    let newUrl = currentSrc;
+    
+    if (currentSrc.includes('.png')) {
+      // If .png failed, try .jpg
+      newUrl = currentSrc.replace('.png', '.jpg');
+    } else if (currentSrc.includes('.jpg') && !currentSrc.match(/\d+\.jpg$/)) {
+      // If simple .jpg failed, try numbered
+      newUrl = currentSrc.replace('.jpg', '1.jpg');
+    } else if (currentSrc.match(/1\.jpg$/)) {
+      // If 1.jpg failed, try 2.jpg
+      newUrl = currentSrc.replace('1.jpg', '2.jpg');
+    } else if (currentSrc.match(/2\.jpg$/)) {
+      // If 2.jpg failed, try 3.jpg
+      newUrl = currentSrc.replace('2.jpg', '3.jpg');
+    } else if (currentSrc.match(/3\.jpg$/)) {
+      // If 3.jpg failed, use placeholder
+      newUrl = 'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo';
+    } else {
+      // Default fallback
+      newUrl = 'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo';
     }
     
-    // Return cached image or start with first pattern
-    if (imageCache[driverId]) {
-      return imageCache[driverId];
-    }
-    
-    // Start with the most likely pattern
-    const patterns = getDriverImagePatterns(driverId);
-    return patterns[0]; // Start with simple .png
+    // Update cache and image source
+    imageCache.set(driverId, newUrl);
+    imgElement.src = newUrl;
   };
 
-  // 🟢 Rotate to next image
-  const rotateDriverImage = (driverId: string) => {
-    const images = driverImages[driverId] || [];
-    if (images.length <= 1) return;
-    
-    const currentIndex = currentImageIndex[driverId] || 0;
-    const nextIndex = (currentIndex + 1) % images.length;
-    
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [driverId]: nextIndex
-    }));
-  };
-
-  // 🟢 Pre-fetch and cache images for all drivers
-  useEffect(() => {
-    const prefetchImages = async () => {
-      if (driversList.length === 0) return;
-      
-      console.log(`🖼️ Pre-fetching images for ${driversList.length} drivers...`);
-      
-      const newDriverImages: Record<string, string[]> = {};
-      const newImageCache: Record<string, string> = {};
-      
-      // Process in batches to avoid too many requests
-      const batchSize = 10;
-      for (let i = 0; i < driversList.length; i += batchSize) {
-        const batch = driversList.slice(i, i + batchSize);
-        
-        await Promise.all(
-          batch.map(async (driver) => {
-            const patterns = getDriverImagePatterns(driver.id);
-            const foundImages: string[] = [];
-            
-            // Check each pattern
-            for (const pattern of patterns) {
-              try {
-                // Skip if we already found 2 images
-                if (foundImages.length >= 2) break;
-                
-                const response = await fetch(pattern, { method: 'HEAD' });
-                if (response.ok) {
-                  foundImages.push(pattern);
-                  
-                  // Cache the first found image
-                  if (!newImageCache[driver.id]) {
-                    newImageCache[driver.id] = pattern;
-                  }
-                }
-              } catch (error) {
-                // Skip this pattern
-                continue;
-              }
-            }
-            
-            if (foundImages.length > 0) {
-              newDriverImages[driver.id] = foundImages;
-            } else {
-              // Use placeholder if no images found
-              const placeholder = 'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo';
-              newDriverImages[driver.id] = [placeholder];
-              newImageCache[driver.id] = placeholder;
-            }
-          })
-        );
-      }
-      
-      // Update caches
-      Object.assign(imageCache, newImageCache);
-      setDriverImages(newDriverImages);
-      console.log(`✅ Pre-fetched images for ${Object.keys(newDriverImages).length} drivers`);
-    };
-    
-    if (driversList.length > 0) {
-      prefetchImages();
-    }
-  }, [driversList]);
-
-  // 🟢 Fetch drivers and images - IMPROVED
+  // 🟢 Fetch drivers
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
@@ -291,13 +212,9 @@ export function DriversScreen() {
           
         } else {
           console.error('❌ Failed to fetch drivers from API');
-          // Fallback to sample data
-          setDriversList(getFallbackDrivers());
         }
       } catch (error) {
         console.error('🔥 Error fetching drivers:', error);
-        // Fallback to sample data
-        setDriversList(getFallbackDrivers());
       } finally {
         setLoading(false);
       }
@@ -305,76 +222,6 @@ export function DriversScreen() {
     
     fetchDrivers();
   }, []);
-
-  // 🟢 Fallback drivers if API fails
-  const getFallbackDrivers = (): Driver[] => {
-    return [
-      {
-        id: 'VER',
-        name: 'Max Verstappen',
-        team: 'Red Bull',
-        nationality: 'Dutch',
-        number: '1',
-        age: 28,
-        f1_debut: 2015,
-        world_champs: 3,
-        race_starts: 200,
-        wins: 71,
-        podiums: 127,
-        poles: 48,
-        status: 'Active',
-        teamColor: teamColors['Red Bull']
-      },
-      {
-        id: 'HAM',
-        name: 'Lewis Hamilton',
-        team: 'Ferrari',
-        nationality: 'British',
-        number: '44',
-        age: 40,
-        f1_debut: 2007,
-        world_champs: 7,
-        race_starts: 350,
-        wins: 105,
-        podiums: 202,
-        poles: 104,
-        status: 'Active',
-        teamColor: teamColors['Ferrari']
-      },
-      {
-        id: 'NOR',
-        name: 'Lando Norris',
-        team: 'McLaren',
-        nationality: 'British',
-        number: '4',
-        age: 26,
-        f1_debut: 2019,
-        world_champs: 0,
-        race_starts: 120,
-        wins: 11,
-        podiums: 44,
-        poles: 16,
-        status: 'Active',
-        teamColor: teamColors['McLaren']
-      },
-      {
-        id: 'LEC',
-        name: 'Charles Leclerc',
-        team: 'Ferrari',
-        nationality: 'Monégasque',
-        number: '16',
-        age: 28,
-        f1_debut: 2018,
-        world_champs: 0,
-        race_starts: 140,
-        wins: 8,
-        podiums: 50,
-        poles: 27,
-        status: 'Active',
-        teamColor: teamColors['Ferrari']
-      }
-    ];
-  };
 
   // 🟢 Filter logic
   const filteredDrivers = useMemo(() => {
@@ -398,28 +245,6 @@ export function DriversScreen() {
       return matchesSearch && matchesTeam && matchesStatus;
     });
   }, [driversList, searchQuery, selectedTeam, selectedStatus]);
-
-  // 🟢 Handle image error - SMART FALLBACK
-  const handleImageError = async (e: React.SyntheticEvent<HTMLImageElement>, driverId: string) => {
-    const imgElement = e.currentTarget as HTMLImageElement;
-    const currentSrc = imgElement.src;
-    
-    // Mark this URL as failed
-    setFailedImages(prev => new Set(prev).add(currentSrc));
-    
-    // Get the patterns
-    const patterns = getDriverImagePatterns(driverId);
-    const currentIndex = patterns.findIndex(url => url === currentSrc);
-    
-    // Try next pattern
-    if (currentIndex < patterns.length - 1) {
-      const nextUrl = patterns[currentIndex + 1];
-      imgElement.src = nextUrl;
-    } else {
-      // All patterns failed, use placeholder
-      imgElement.src = 'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo';
-    }
-  };
 
   // 🟢 Upload Logic
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -660,97 +485,70 @@ export function DriversScreen() {
           </div>
         ) : (
           <>
-            {/* Driver Grid - SMART IMAGE DISPLAY */}
+            {/* Driver Grid */}
             <div className="grid grid-cols-2 gap-3">
-              {filteredDrivers.map((driver) => {
-                const images = driverImages[driver.id] || [];
-                const hasMultipleImages = images.length > 1;
-                const currentIndex = currentImageIndex[driver.id] || 0;
-                const currentImage = images[currentIndex] || getDriverImage(driver.id, driver.name);
-                
-                return (
-                  <div
-                    key={driver.id}
-                    className={`rounded-xl border overflow-hidden transition-all relative group ${
-                      isDark 
-                        ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
-                        : 'bg-white border-white shadow-sm hover:shadow-md hover:border-red-100'
-                    } ${driver.status !== 'Active' ? 'opacity-80' : ''}`}
-                  >
-                    {/* Image Container */}
-                    <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
-                      <img
-                        src={currentImage}
-                        alt={driver.name}
-                        className="w-full h-full object-cover object-top"
-                        onError={(e) => handleImageError(e, driver.id)}
-                        loading="lazy"
-                      />
-                      
-                      {/* Number Badge */}
-                      <div className="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
-                        <span className="text-white font-bold text-xs">{driver.number}</span>
-                      </div>
-                      
-                      {/* Status Badge */}
-                      {driver.status !== 'Active' && (
-                        <div className="absolute top-2 left-2 bg-gray-800/80 text-white text-[10px] px-2 py-1 rounded-full">
-                          RETIRED
-                        </div>
-                      )}
-                      
-                      {/* Multiple Images Controls */}
-                      {hasMultipleImages && (
-                        <>
-                          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full">
-                            {currentIndex + 1}/{images.length}
-                          </div>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              rotateDriverImage(driver.id);
-                            }}
-                            className="absolute bottom-2 left-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Next image"
-                          >
-                            <ImageIcon className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
+              {filteredDrivers.map((driver) => (
+                <div
+                  key={driver.id}
+                  className={`rounded-xl border overflow-hidden transition-all relative group ${
+                    isDark 
+                      ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
+                      : 'bg-white border-white shadow-sm hover:shadow-md hover:border-red-100'
+                  } ${driver.status !== 'Active' ? 'opacity-80' : ''}`}
+                >
+                  {/* Image Container */}
+                  <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                    <img
+                      src={getDriverImage(driver.id)}
+                      alt={driver.name}
+                      className="w-full h-full object-cover object-top"
+                      onError={(e) => handleImageError(e, driver.id)}
+                      loading="lazy"
+                    />
+                    
+                    {/* Number Badge */}
+                    <div className="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                      <span className="text-white font-bold text-xs">{driver.number}</span>
                     </div>
+                    
+                    {/* Status Badge */}
+                    {driver.status !== 'Active' && (
+                      <div className="absolute top-2 left-2 bg-gray-800/80 text-white text-[10px] px-2 py-1 rounded-full">
+                        RETIRED
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="p-3">
-                      <div className="mb-1">
-                        <h3 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {driver.name}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-1 h-3 rounded-full"
-                          style={{ backgroundColor: driver.teamColor }}
-                        />
-                        <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
-                          {driver.team}
-                        </span>
-                      </div>
-                      {/* Quick stats */}
-                      <div className="flex gap-3 mt-2 text-[10px]">
-                        <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
-                          🏆 {driver.world_champs}
-                        </span>
-                        <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
-                          🏁 {driver.wins}
-                        </span>
-                        <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
-                          🥇 {driver.podiums}
-                        </span>
-                      </div>
+                  <div className="p-3">
+                    <div className="mb-1">
+                      <h3 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {driver.name}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-1 h-3 rounded-full"
+                        style={{ backgroundColor: driver.teamColor }}
+                      />
+                      <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
+                        {driver.team}
+                      </span>
+                    </div>
+                    {/* Quick stats */}
+                    <div className="flex gap-3 mt-2 text-[10px]">
+                      <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
+                        🏆 {driver.world_champs}
+                      </span>
+                      <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
+                        🏁 {driver.wins}
+                      </span>
+                      <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>
+                        🥇 {driver.podiums}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
             {filteredDrivers.length === 0 && (
