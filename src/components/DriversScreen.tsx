@@ -87,8 +87,8 @@ export function DriversScreen() {
   const [driverImages, setDriverImages] = useState<Record<string, string[]>>({});
   const [currentImageIndex, setCurrentImageIndex] = useState<Record<string, number>>({});
 
-  // 🟢 Get driver image
-  const getDriverImage = (driverId: string) => {
+  // 🟢 Get driver image - FIXED VERSION
+  const getDriverImage = (driverId: string, driverName?: string) => {
     const images = driverImages[driverId] || [];
     const currentIndex = currentImageIndex[driverId] || 0;
     
@@ -99,8 +99,19 @@ export function DriversScreen() {
       }
     }
     
-    // Direct URLs to static files
-    return `${API_BASE}/driver-faces/${driverId}1.jpg`;
+    // Direct URLs to static files - try multiple patterns
+    const fallbackPatterns = [
+      `${API_BASE}/driver-faces/${driverId}1.jpg`,
+      `${API_BASE}/driver-faces/${driverId}2.jpg`,
+      `${API_BASE}/driver-faces/${driverId}3.jpg`,
+      `${API_BASE}/driver-faces/${driverId}1.png`,
+      `${API_BASE}/driver-faces/${driverId}2.png`,
+      `${API_BASE}/driver-faces/${driverId}.jpg`,
+      `${API_BASE}/driver-faces/${driverId}.png`,
+      'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
+    ];
+    
+    return fallbackPatterns[0];
   };
 
   // 🟢 Rotate to next image
@@ -117,7 +128,7 @@ export function DriversScreen() {
     }));
   };
 
-  // 🟢 Fetch drivers and images
+  // 🟢 Fetch drivers and images - SIMPLIFIED VERSION
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
@@ -170,62 +181,21 @@ export function DriversScreen() {
           
           setDriversList(mappedDrivers);
           
-          // 🟢 Pre-fetch image availability for each driver
-          const imagePromises = mappedDrivers.map(async (driver: Driver) => {
-            try {
-              // Try multiple image patterns
-              const imagePatterns = [
-                `${API_BASE}/driver-faces/${driver.id}1.jpg`,
-                `${API_BASE}/driver-faces/${driver.id}2.jpg`,
-                `${API_BASE}/driver-faces/${driver.id}3.jpg`,
-                `${API_BASE}/driver-faces/${driver.id}1.png`,
-                `${API_BASE}/driver-faces/${driver.id}2.png`,
-                `${API_BASE}/driver-faces/${driver.id}.jpg`,
-                `${API_BASE}/driver-faces/${driver.id}.png`,
-              ];
-              
-              // Check which images exist
-              const existingImages: string[] = [];
-              
-              for (const pattern of imagePatterns) {
-                try {
-                  const checkResponse = await fetch(pattern, { method: 'HEAD' });
-                  if (checkResponse.ok) {
-                    existingImages.push(pattern);
-                  }
-                } catch (e) {
-                  // Image doesn't exist or failed to load
-                  continue;
-                }
-              }
-              
-              if (existingImages.length > 0) {
-                return { driverId: driver.id, images: existingImages };
-              }
-              
-              return { driverId: driver.id, images: [] };
-              
-            } catch (error) {
-              console.error(`Failed to check images for ${driver.id}:`, error);
-              return { driverId: driver.id, images: [] };
-            }
+          // 🟢 SIMPLIFIED: Directly set image URLs without API call
+          const initialImages: Record<string, string[]> = {};
+          
+          mappedDrivers.forEach((driver: Driver) => {
+            const imageUrls = [
+              `${API_BASE}/driver-faces/${driver.id}1.jpg`,
+              `${API_BASE}/driver-faces/${driver.id}2.jpg`,
+              `${API_BASE}/driver-faces/${driver.id}3.jpg`,
+              `${API_BASE}/driver-faces/${driver.id}.jpg`,
+            ];
+            
+            initialImages[driver.id] = imageUrls;
           });
           
-          // Process all image checks
-          const imageResults = await Promise.allSettled(imagePromises);
-          
-          // Update driver images state
-          imageResults.forEach(result => {
-            if (result.status === 'fulfilled') {
-              const { driverId, images } = result.value;
-              if (images.length > 0) {
-                setDriverImages(prev => ({
-                  ...prev,
-                  [driverId]: images
-                }));
-              }
-            }
-          });
+          setDriverImages(initialImages);
           
         } else {
           console.error('❌ Failed to fetch drivers from API');
@@ -263,7 +233,7 @@ export function DriversScreen() {
     });
   }, [driversList, searchQuery, selectedTeam, selectedStatus]);
 
-  // 🟢 Upload Logic
+  // 🟢 Upload Logic - FIXED VERSION
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -277,6 +247,8 @@ export function DriversScreen() {
       formData.append('file', file);
 
       try {
+        console.log("📤 Uploading image for identification...");
+        
         const response = await fetch(`${API_BASE}/identify-driver`, {
           method: 'POST',
           headers: {
@@ -284,18 +256,38 @@ export function DriversScreen() {
           },
           body: formData,
         });
+        
+        console.log("📥 Response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
+        console.log("📦 Identification response:", data);
 
         if (data.success && data.driver_id) {
           if (data.driver_info) {
             const enhancedDriver = {
-              ...data.driver_info,
+              id: data.driver_id,
+              name: data.driver_info.name || `Driver ${data.driver_id}`,
+              team: data.driver_info.team || "Unknown",
+              nationality: data.driver_info.country || "Unknown",
+              number: data.driver_info.number || "0",
+              age: data.driver_info.age || 0,
+              f1_debut: data.driver_info.f1_debut || 0,
+              world_champs: data.driver_info.world_champs || 0,
+              race_starts: data.driver_info.starts || 0,
+              wins: data.driver_info.wins || 0,
+              podiums: data.driver_info.podiums || 0,
+              poles: data.driver_info.poles || 0,
+              status: "Active",
               teamColor: teamColors[data.driver_info.team] || teamColors.default,
               stats: {
                 'Wins': data.driver_info.wins || 0,
                 'Podiums': data.driver_info.podiums || 0,
                 'Poles': data.driver_info.poles || 0,
-                'Starts': data.driver_info.race_starts || 0
+                'Starts': data.driver_info.starts || 0
               },
               images: data.available_images || []
             };
@@ -306,14 +298,17 @@ export function DriversScreen() {
             if (foundDriver) {
               setSelectedDriver(foundDriver);
               alert(`✅ Match found: ${foundDriver.name} (${data.confidence})`);
+            } else {
+              alert(`⚠️ AI identified "${data.driver_id}", but driver not found.`);
             }
           }
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
+          setSelectedDriver(null);
         }
       } catch (error) {
         console.error("🔥 Upload failed:", error);
-        alert("Server connection failed.");
+        alert("Server connection failed. Please check if the server is running and try again.");
       }
     }
   };
@@ -477,7 +472,7 @@ export function DriversScreen() {
           </div>
         ) : (
           <>
-            {/* Driver Grid */}
+            {/* Driver Grid - FIXED IMAGE DISPLAY */}
             <div className="grid grid-cols-2 gap-3">
               {filteredDrivers.map((driver) => {
                 const images = driverImages[driver.id] || [];
@@ -496,7 +491,7 @@ export function DriversScreen() {
                     {/* Image Container */}
                     <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
                       <img
-                        src={getDriverImage(driver.id)}
+                        src={getDriverImage(driver.id, driver.name)}
                         alt={driver.name}
                         className="w-full h-full object-cover object-top"
                         onError={(e) => {
@@ -506,12 +501,19 @@ export function DriversScreen() {
                             `${API_BASE}/driver-faces/${driver.id}3.jpg`,
                             `${API_BASE}/driver-faces/${driver.id}.jpg`,
                             `${API_BASE}/driver-faces/${driver.id}.png`,
-                            'https://via.placeholder.com/300x400/333333/666666?text=Driver+Photo'
+                            'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
                           ];
                           
-                          for (const fallback of fallbackImages) {
-                            imgElement.src = fallback;
-                            break;
+                          // Try next fallback image
+                          const currentSrc = imgElement.src;
+                          const currentIndex = fallbackImages.findIndex(url => url === currentSrc);
+                          const nextIndex = currentIndex + 1;
+                          
+                          if (nextIndex < fallbackImages.length) {
+                            imgElement.src = fallbackImages[nextIndex];
+                          } else if (currentIndex === -1) {
+                            // First attempt failed, try the first fallback
+                            imgElement.src = fallbackImages[0];
                           }
                         }}
                       />
