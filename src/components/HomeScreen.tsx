@@ -24,7 +24,6 @@ interface NewsArticle {
   Team?: string; 
 }
 
-// Consistent Spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -46,40 +45,30 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [hasModalOpen, setHasModalOpen] = useState(false);
-  
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
-  // --- MODAL DETECTION ---
   useEffect(() => {
     const checkForModals = () => {
-      // Check if any modal elements exist in the DOM
       const modals = document.querySelectorAll('[data-modal="true"]');
       setHasModalOpen(modals.length > 0);
     };
-
-    // Check initially and set up interval
     checkForModals();
     const interval = setInterval(checkForModals, 100);
-    
     return () => clearInterval(interval);
   }, []);
 
-  // --- COUNTDOWN LOGIC ---
   const nextRace = races.find(race => race.id === 'australian-gp-2026') || races.find(race => race.status === 'upcoming');
   
   useEffect(() => {
     if (!nextRace) return;
-    
     const updateCountdown = () => {
       const now = new Date();
-      // Safe Date Parsing for iOS/Safari (YYYY/MM/DD)
       const cleanDate = nextRace.date.replace(/-/g, '/'); 
       const cleanTime = nextRace.time ? nextRace.time : '12:00:00';
       const raceDateStr = `${cleanDate} ${cleanTime}`;
       const raceDate = new Date(raceDateStr);
       
       if (isNaN(raceDate.getTime())) return;
-
       const diff = raceDate.getTime() - now.getTime();
       
       if (diff > 0) {
@@ -90,24 +79,19 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         setCountdown({ days, hours, minutes, seconds });
       }
     };
-    
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [nextRace]);
 
-  // --- LISTENER FOR CHATBOT UPDATES ---
   useEffect(() => {
     const handleNewsUpdateSignal = () => {
-        console.log("📣 HomeScreen: Received update signal!");
         setRefreshTrigger(prev => prev + 1);
     };
-
     window.addEventListener('newsUpdated', handleNewsUpdateSignal);
     return () => window.removeEventListener('newsUpdated', handleNewsUpdateSignal);
   }, []);
 
-  // --- FETCH NEWS ---
   useEffect(() => {
     const fetchNews = async () => {
       setIsRefreshing(true);
@@ -131,7 +115,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   
   if (!nextRace) return null;
 
-  // --- DYNAMIC STYLES ---
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ee1919ff' } 
     : { 
@@ -190,12 +173,12 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
     >
       
       {/* --- HEADER --- */}
-      {/* 🟢 FIXED: Added z-40 and transform to force stacking context */}
+      {/* 🟢 FIX 1: High Z-Index + Translate Trick for iOS Safari */}
       <div 
-        className="sticky top-0 z-1000 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
+        className="sticky top-0 z-[100] px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-sm"
         style={{ 
             background: 'linear-gradient(to right, #7f1d1d, #450a0a)',
-            transform: 'translateZ(0)' // Fix for iOS Safari sticky issues
+            transform: 'translate3d(0,0,0)' // Hardware acceleration & stacking fix
         }}
       >
         <div>
@@ -217,8 +200,9 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         </div>
       </div>
 
-      {/* Main Content Container */}
-      <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP} mt-2 pb-10 pt-2`}>
+      {/* 🟢 FIX 2: Content Container with z-0 */}
+      {/* This traps all children (like the Hero Card) in a lower layer than the Header */}
+      <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP} mt-2 pb-10 pt-2 relative z-0`}>
         
         {/* --- 1. HERO CARD --- */}
         <section className={SPACING.SECTION_MARGIN}>
@@ -297,10 +281,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                         }
                     `}
                   >
-                    {/* Animated Shine Effect */}
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-in-out z-10" />
-                    
-                    {/* Content */}
                     <div className="relative z-20 flex items-center justify-center gap-2">
                         <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse fill-yellow-300" />
                         <span className="text-sm">View AI Prediction</span>
@@ -329,7 +310,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 </p>
             </div>
             
-            {/* ISOLATE CONTAINER TO PREVENT Z-INDEX INTERFERENCE */}
             <div className="isolate">
               <div className={`relative ${SPACING.BORDER_RADIUS} ${SPACING.BORDER_WIDTH} ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                   <div className={SPACING.CARD_GAP}>
@@ -353,7 +333,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                 </div>
               </div>
               
-              {/* REFRESH BUTTON */}
               <div className={`flex items-center ${SPACING.COMPONENT_GAP}`}>
                 {lastUpdated && (
                     <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
