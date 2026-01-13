@@ -92,7 +92,6 @@ const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, 
 
       } catch (err) {
         if (isMounted) {
-            // console.warn(`Secure load failed for ${src}, falling back to direct URL.`);
             setImageSrc(src);
         }
       }
@@ -174,9 +173,9 @@ export function DriversScreen() {
               nationality: driver.country || driver.Nationality || "Unknown",
               number: String(driver.number || "0"),
               age: Number(driver.age || 0),
-              f1_debut: Number(driver.debut || 0),
-              // 🟢 FIX: Ensure world_champs is mapped correctly from API response
-              world_champs: Number(driver.world_champs !== undefined ? driver.world_champs : (driver.championships || 0)),
+              // 🟢 KEY FIXES: Map backend keys correctly
+              f1_debut: Number(driver.f1_debut || driver.debut || 0),
+              world_champs: Number(driver.world_champs || 0),
               race_starts: Number(driver.starts || 0),
               wins: Number(driver.wins || 0),
               podiums: Number(driver.podiums || 0),
@@ -272,7 +271,6 @@ export function DriversScreen() {
             } as Driver;
 
             setSelectedDriver(enhancedDriver);
-            // alert(`✅ Match found: ${enhancedDriver.name} (${data.confidence})`);
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
           setSelectedDriver(null);
@@ -383,7 +381,7 @@ export function DriversScreen() {
                     <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>{driver.team}</span>
                   </div>
                   
-                  {/* 🟢 STATS GRID */}
+                  {/* 🟢 STATS GRID - Now displays real data */}
                   <div className="grid grid-cols-2 gap-y-1 gap-x-1 mt-3">
                     <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                         <span>🏆</span>
