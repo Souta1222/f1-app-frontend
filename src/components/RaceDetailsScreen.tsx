@@ -7,47 +7,6 @@ import { useTheme } from './../components/ThemeContext.tsx';
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 NEW: NGROK BYPASS IMAGE COMPONENT
-// This fetches the image using JS headers to skip the Ngrok warning page
-const NgrokImage = ({ src, alt, className, style, onError }: any) => {
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!src || !src.startsWith('http')) {
-      setImgSrc(src);
-      return;
-    }
-
-    let isMounted = true;
-    fetch(src, {
-      headers: { 
-        'ngrok-skip-browser-warning': 'true',
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(async res => {
-      if (!res.ok) throw new Error("Failed");
-      const blob = await res.blob();
-      if (isMounted) setImgSrc(URL.createObjectURL(blob));
-    })
-    .catch(() => {
-      if (isMounted) setImgSrc(src); // Fallback to direct link
-    });
-
-    return () => { isMounted = false; };
-  }, [src]);
-
-  return (
-    <img 
-      src={imgSrc || src} 
-      alt={alt} 
-      className={className} 
-      style={style}
-      onError={onError}
-    />
-  );
-};
-
 // --- SHARED 2026 SCHEDULE ---
 const SCHEDULE_2026 = [
   { "round": 1, "circuit": "Melbourne, Australia" },
@@ -287,30 +246,70 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image - FIXED PATH & NGROK BYPASS
+  // Helper for Image - UPDATED TO USE BACKEND URL
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
+    const [currentAttempt, setCurrentAttempt] = useState(0);
     
-    // Try multiple image sources - FIXED PATH
-    let src = null;
-    if (id && !imgError) {
-      // Point to backend endpoint directly
-      src = `${API_BASE}/driver_image/${id}`;
-    } else if (driverName && !imgError) {
-      // Fallback
-      const formattedName = formatDriverNameForImage(driverName);
-      src = `${API_BASE}/driver_image/${formattedName}`;
-    }
+    // Try multiple image naming patterns - USING BACKEND URL
+    const getImageSources = () => {
+      const sources = [];
+      
+      if (id) {
+        // Try with numbers 1, 2, 3 first (most likely)
+        sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${id}1.png`);
+        sources.push(`${API_BASE}/driver-faces/${id}2.png`);
+        sources.push(`${API_BASE}/driver-faces/${id}3.png`);
+        
+        // Then try without numbers
+        sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${id}.png`);
+      }
+      
+      if (driverName) {
+        // Fallback: try with formatted driver name
+        const formattedName = formatDriverNameForImage(driverName);
+        sources.push(`${API_BASE}/driver-faces/${formattedName}1.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${formattedName}2.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${formattedName}3.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${formattedName}.jpg`);
+        sources.push(`${API_BASE}/driver-faces/${formattedName}.png`);
+      }
+      
+      return sources;
+    };
+    
+    const imageSources = useMemo(() => getImageSources(), [id, driverName]);
+    const src = imageSources[currentAttempt];
+    
+    const handleImageError = () => {
+      if (currentAttempt < imageSources.length - 1) {
+        // Try next source
+        setCurrentAttempt(prev => prev + 1);
+      } else {
+        // All attempts failed
+        setImgError(true);
+      }
+    };
+    
+    // Reset attempts when id or driverName changes
+    useEffect(() => {
+      setCurrentAttempt(0);
+      setImgError(false);
+    }, [id, driverName]);
     
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src && !imgError ? (
-            // 🟢 UPDATED: Use NgrokImage component
-            <NgrokImage 
+            <img 
               src={src} 
               alt={alt} 
               className="w-full h-full object-cover object-top" 
-              onError={() => setImgError(true)}
+              onError={handleImageError}
+              loading="lazy"
             />
         ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
