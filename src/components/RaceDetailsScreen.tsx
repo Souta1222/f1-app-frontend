@@ -2,10 +2,51 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
 import { drivers } from '../lib/data'; 
 // @ts-ignore
-import { getDriverImage } from '../lib/images';
+import { useTheme } from './../components/ThemeContext.tsx'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
+
+// 🟢 NEW: NGROK BYPASS IMAGE COMPONENT
+// This fetches the image using JS headers to skip the Ngrok warning page
+const NgrokImage = ({ src, alt, className, style, onError }: any) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!src || !src.startsWith('http')) {
+      setImgSrc(src);
+      return;
+    }
+
+    let isMounted = true;
+    fetch(src, {
+      headers: { 
+        'ngrok-skip-browser-warning': 'true',
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(async res => {
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      if (isMounted) setImgSrc(URL.createObjectURL(blob));
+    })
+    .catch(() => {
+      if (isMounted) setImgSrc(src); // Fallback to direct link
+    });
+
+    return () => { isMounted = false; };
+  }, [src]);
+
+  return (
+    <img 
+      src={imgSrc || src} 
+      alt={alt} 
+      className={className} 
+      style={style}
+      onError={onError}
+    />
+  );
+};
 
 // --- SHARED 2026 SCHEDULE ---
 const SCHEDULE_2026 = [
@@ -246,61 +287,30 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image - UPDATED TO USE BACKEND URL
+  // Helper for Image - FIXED PATH & NGROK BYPASS
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
-    const [currentAttempt, setCurrentAttempt] = useState(0);
     
-    // Try multiple image naming patterns - USING BACKEND URL
-    // In RaceDetailsScreen.tsx, update the getImageSources() function:
-    // In the getImageSources() function:
-    // In the getImageSources() function:
-const getImageSources = () => {
-    const sources = [];
-    
-    if (id) {
-      // 🎯 ONLY use /driver-faces/ URLs
-      sources.push(`${API_BASE}/driver-faces/${id}.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}1.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}1.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}2.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}2.jpg`);
-      sources.push(`${API_BASE}/driver-faces/${id}3.png`);
-      sources.push(`${API_BASE}/driver-faces/${id}3.jpg`);
+    // Try multiple image sources - FIXED PATH
+    let src = null;
+    if (id && !imgError) {
+      // Point to backend endpoint directly
+      src = `${API_BASE}/driver_image/${id}`;
+    } else if (driverName && !imgError) {
+      // Fallback
+      const formattedName = formatDriverNameForImage(driverName);
+      src = `${API_BASE}/driver_image/${formattedName}`;
     }
-    
-    return sources;
-  };
-    
-    const imageSources = useMemo(() => getImageSources(), [id, driverName]);
-    const src = imageSources[currentAttempt];
-    
-    const handleImageError = () => {
-      if (currentAttempt < imageSources.length - 1) {
-        // Try next source
-        setCurrentAttempt(prev => prev + 1);
-      } else {
-        // All attempts failed
-        setImgError(true);
-      }
-    };
-    
-    // Reset attempts when id or driverName changes
-    useEffect(() => {
-      setCurrentAttempt(0);
-      setImgError(false);
-    }, [id, driverName]);
     
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src && !imgError ? (
-            <img 
+            // 🟢 UPDATED: Use NgrokImage component
+            <NgrokImage 
               src={src} 
               alt={alt} 
               className="w-full h-full object-cover object-top" 
-              onError={handleImageError}
-              loading="lazy"
+              onError={() => setImgError(true)}
             />
         ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
