@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Flag, Trophy, Medal, Info, TrendingUp, BrainCircuit, User, Crown, X } from 'lucide-react';
+import { ChevronLeft, Flag, Trophy, Medal, Info, TrendingUp, BrainCircuit, User, Crown, X, BarChart3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { drivers } from '../lib/data'; 
 // @ts-ignore
@@ -55,7 +55,9 @@ interface RaceResult {
   wins?: number;
   status: string;
   details?: string;
-  probability?: string; // Prediction Only
+  probability?: string; // Win %
+  podiumProbability?: string; // Podium % (added)
+  pointsProbability?: string; // Points % (added)
   reasons?: { positive: string[], negative: string[] }; // Prediction Only
 }
 
@@ -142,6 +144,40 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             if (res.ok) {
                 const data = await res.json();
                 rawData = data.predictions; 
+                
+                // Process predictions similar to PredictionResultsScreen
+                if (Array.isArray(rawData)) {
+                  const processedResults = rawData.map((item: any) => {
+                    const winVal = parseFloat(item.probability);
+                    
+                    // Fallback estimation for podium and points probabilities
+                    let podiumVal = item.podium_probability 
+                      ? parseFloat(item.podium_probability) 
+                      : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
+                    
+                    let pointsVal = item.points_probability
+                      ? parseFloat(item.points_probability)
+                      : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
+
+                    if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
+                    if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+
+                    return {
+                      position: item.position,
+                      driver: item.driver.name,
+                      driverId: getDriverIdByName(item.driver.name),
+                      team: item.driver.team,
+                      probability: item.probability,
+                      podiumProbability: podiumVal.toFixed(1),
+                      pointsProbability: pointsVal.toFixed(1),
+                      reasons: item.reasons || { positive: [], negative: [] },
+                      status: 'Predicted',
+                      details: item.reasons?.positive?.[0] || "AI Analysis pending"
+                    };
+                  });
+                  setFetchedResults(processedResults);
+                  return;
+                }
             }
         } 
         // 🟢 RESULTS FETCH (2024/23)
@@ -154,7 +190,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         }
 
-        // Normalize Data
+        // Normalize Data (for non-2026)
         const cleanData: RaceResult[] = [];
         if (Array.isArray(rawData)) {
             for (const item of rawData) {
@@ -171,6 +207,8 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
                         wins: item.wins ? parseInt(item.wins) : undefined,
                         probability: isPred ? String(item.probability) : undefined,
+                        podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
+                        pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
                         reasons: item.reasons,
                         details: isPred 
                             ? (item.reasons?.positive?.[0] || "AI Analysis pending") 
@@ -349,42 +387,84 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             </>
         )}
 
-        {/* --- DETAILS DIALOG (2026 ONLY) --- */}
+        {/* --- DETAILS DIALOG (2026 ONLY) - UPDATED TO MATCH PREDICTIONRESULTSSCREEN --- */}
         <Dialog open={!!selectedPrediction} onOpenChange={() => setSelectedPrediction(null)}>
-            <DialogContent className={`rounded-2xl max-w-[90vw] border ${isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}>
+            <DialogContent className={`rounded-2xl max-w-lg border p-8 pt-14 pb-10 relative ${
+                isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+            }`}>
                 {selectedPrediction && (
                 <>
-                    <DialogHeader>
-                    <DialogTitle className="font-bold text-xl flex items-center gap-2">
-                        <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: getTeamColor(selectedPrediction.team) }}></div>
-                        {selectedPrediction.driver}
-                    </DialogTitle>
-                    </DialogHeader>
-                    <div className="pt-4 space-y-4">
-                        <div className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-xs font-bold uppercase text-gray-500">Win Probability</span>
-                                <span className="text-2xl font-bold text-green-600 font-mono">{selectedPrediction.probability}%</span>
+                    {/* Close Button */}
+                    <button 
+                      onClick={() => setSelectedPrediction(null)}
+                      className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${
+                        isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Header */}
+                    <div className="flex items-start gap-4 mb-8 pr-12">
+                      <div 
+                        className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" 
+                        style={{ backgroundColor: getTeamColor(selectedPrediction.team) }}
+                      />
+                      <div className="flex flex-col">
+                        <h2 className="text-3xl font-bold leading-tight tracking-tight">{selectedPrediction.driver}</h2>
+                        <span className={`text-sm font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                            {selectedPrediction.team}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 🟢 STATS GRID (SAME AS PREDICTIONRESULTSSCREEN) */}
+                    <div className={`grid grid-cols-3 gap-2 mb-8`}>
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1">
+                                <Trophy className="w-3 h-3" /> Win
                             </div>
-                            <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-neutral-700' : 'bg-slate-200'}`}>
-                                <div className="h-full bg-green-500" style={{ width: `${selectedPrediction.probability}%` }} />
+                            <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {selectedPrediction.probability}%
                             </div>
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2 text-green-600 mb-2 font-bold text-xs uppercase"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
-                            <ul className="space-y-2">
-                                {selectedPrediction.reasons?.positive?.map((r, i) => (
-                                    <li key={i} className="flex gap-2 text-sm">
-                                        <span className="text-green-500">●</span> {r}
-                                    </li>
-                                ))}
-                                {(!selectedPrediction.reasons?.positive || selectedPrediction.reasons.positive.length === 0) && (
-                                    <li className="flex gap-2 text-sm text-gray-500">
-                                        <span className="text-gray-500">●</span> Standard performance expected.
-                                    </li>
-                                )}
-                            </ul>
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1">
+                                <BarChart3 className="w-3 h-3" /> Podium
+                            </div>
+                            <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {selectedPrediction.podiumProbability || '0'}%
+                            </div>
                         </div>
+                        <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
+                            <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1">
+                                <TrendingUp className="w-3 h-3" /> Points
+                            </div>
+                            <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {selectedPrediction.pointsProbability || '0'}%
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Analysis List */}
+                    <div>
+                        <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
+                          <TrendingUp className="w-4 h-4"/> AI Analysis
+                        </div>
+                        <ul className="space-y-4">
+                            {selectedPrediction.reasons?.positive?.map((r, i) => (
+                                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
+                                    <span>{r}</span>
+                                </li>
+                            ))}
+                            {(!selectedPrediction.reasons?.positive || selectedPrediction.reasons.positive.length === 0) && (
+                                  <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
+                                    <span>Standard performance expected based on current form.</span>
+                                </li>
+                            )}
+                        </ul>
                     </div>
                 </>
                 )}
