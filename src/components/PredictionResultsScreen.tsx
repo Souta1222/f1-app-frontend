@@ -26,8 +26,13 @@ type PredictionCard = {
 
 // Helper to find ID from Name
 const getDriverIdByName = (fullName: string) => {
+  // 1. Try exact match in local data
   const entry = Object.values(drivers).find(d => d.name === fullName);
-  return entry ? entry.id : null;
+  if (entry) return entry.id;
+
+  // 2. Fallback: Try partial match (e.g. "Verstappen" in "Max Verstappen")
+  const partial = Object.values(drivers).find(d => fullName.includes(d.lastname));
+  return partial ? partial.id : null;
 };
 
 const getTeamColor = (team: string) => {
@@ -41,7 +46,7 @@ const getTeamColor = (team: string) => {
   if (t.includes('williams')) return '#005AFF';
   if (t.includes('alpine')) return '#FF87BC';
   if (t.includes('haas')) return '#B6BABD';
-  if (t.includes('sauber') || t.includes('kick')) return '#52E252';
+  if (t.includes('sauber') || t.includes('kick') || t.includes('audi')) return '#52E252';
   if (t.includes('rb') || t.includes('racing bulls')) return '#6692FF';
   return '#666666';
 };
@@ -83,30 +88,47 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const backendList = data.predictions || [];
 
         const formattedResults: PredictionCard[] = backendList.map((item: any) => {
-            const winVal = parseFloat(item.probability);
+            // Backend sends numbers now (float), ensure we handle them
+            const winVal = typeof item.probability === 'number' ? item.probability : parseFloat(item.probability || '0');
             
-            // Fallback estimation if backend sends 0 or null
-            let podiumVal = item.podium_probability 
-                ? parseFloat(item.podium_probability) 
-                : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
+            // 🟢 LOGIC MATCH: The backend focuses on Win %, so we calculate logical Podium/Points stats 
+            // to ensure the UI looks populated even if the backend simple-mode doesn't send them explicitly.
             
-            let pointsVal = item.points_probability
-                ? parseFloat(item.points_probability)
-                : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
+            let podiumVal = 0;
+            let pointsVal = 0;
 
-            if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
-            if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+            // Use backend data if available (Realistic Simulation mode)
+            if (item.stats && item.stats.podium_prob) {
+                podiumVal = item.stats.podium_prob;
+            } else {
+                // Fallback math based on Position & Win %
+                if (item.position <= 3) podiumVal = Math.min(99, Math.max(70, winVal * 2));
+                else if (item.position <= 6) podiumVal = Math.min(60, Math.max(20, winVal * 4));
+                else podiumVal = Math.max(1, 15 - item.position);
+            }
+
+            if (item.stats && item.stats.points_prob) {
+                pointsVal = item.stats.points_prob;
+            } else {
+                 // Fallback math
+                if (item.position <= 10) pointsVal = Math.min(99, Math.max(60, 100 - (item.position * 5)));
+                else pointsVal = Math.max(5, 40 - ((item.position - 10) * 5));
+            }
+
+            // 🟢 ID FIX: Prefer backend ID, fallback to local name lookup
+            const resolvedId = item.driver.id || getDriverIdByName(item.driver.name);
 
             return {
                 id: item.driver.name,
                 driverName: item.driver.name,
-                driverId: getDriverIdByName(item.driver.name), 
+                driverId: resolvedId, 
                 team: item.driver.team,
                 position: item.position,
-                probability: item.probability + "%",
+                probability: winVal.toFixed(1) + "%",
                 podiumProbability: podiumVal.toFixed(1) + "%",
                 pointsProbability: pointsVal.toFixed(1) + "%",
-                reasons: item.reasons,
+                // Handle reasons safely
+                reasons: item.reasons || { positive: [], negative: [] },
                 driver: { teamColor: getTeamColor(item.driver.team) }
             };
         });
@@ -139,7 +161,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4 text-red-600">🏎️</div>
           <p className={`uppercase tracking-widest font-bold text-xs ${textSecondary}`}>
-            Calculating 2026 Grid...
+            Running Simulations...
           </p>
         </div>
       </div>
@@ -149,16 +171,26 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   const podium = predictions.slice(0, 3);
   
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
+    // 🟢 IMAGE FIX: Ensure we try to fetch image, handle missing ID gracefully
     const src = id ? getDriverImage(id) : null;
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src ? (
-            <img src={src} alt={alt} className="w-full h-full object-cover object-top" />
-        ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                <User className="w-8 h-8" />
-            </div>
-        )}
+            <img 
+                src={src} 
+                alt={alt} 
+                className="w-full h-full object-cover object-top" 
+                onError={(e) => {
+                    // Fallback if image fails to load
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                }}
+            />
+        ) : null}
+        {/* Fallback Icon */}
+        <div className={`w-full h-full flex items-center justify-center text-gray-400 absolute top-0 left-0 ${src ? 'hidden' : ''}`}>
+            <User className="w-8 h-8" />
+        </div>
       </div>
     );
   };
@@ -262,11 +294,12 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
         {/* FULL GRID LIST */}
         <div className="px-4 space-y-3 pt-2">
-            <div className={`text-xs font-bold uppercase tracking-widest mb-2 px-1 ${textSecondary}`}>Full Grid Prediction</div>
+            <div className={`text-xs font-bold uppercase tracking-widest mb-2 px-1 ${textSecondary}`}>Full Grid Forecast</div>
             {predictions.map((p) => (
               <div 
                   key={p.id} 
-                  className={`rounded-xl border shadow-sm p-3 flex items-center justify-between transition-colors active:scale-[0.99] ${cardBg}`}
+                  onClick={() => setSelectedDriver(p)}
+                  className={`rounded-xl border shadow-sm p-3 flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${cardBg}`}
                   style={{ borderLeft: `4px solid ${getTeamColor(p.team)}` }}
               >
                   <div className="flex items-center gap-4">
@@ -288,12 +321,9 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                           <div className="text-[10px] font-bold text-gray-400 uppercase">Win %</div>
                           <div className="text-green-600 font-bold font-mono text-sm">{p.probability}</div>
                       </div>
-                      <button 
-                          onClick={() => setSelectedDriver(p)} 
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-                      >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-400'}`}>
                           <Info className="w-4 h-4" />
-                      </button>
+                      </div>
                   </div>
               </div>
             ))}
@@ -313,15 +343,14 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
             onClick={() => setSelectedDriver(null)}
           />
           
-          {/* Modal Content - FIXED PADDING */}
+          {/* Modal Content */}
           <div 
             className={`relative z-[70] w-full max-w-lg rounded-2xl shadow-2xl p-8 pt-14 pb-10 border ${
               isDark ? 'border-neutral-700' : 'border-slate-200'
             }`}
             style={{ 
                 backgroundColor: isDark ? '#171717' : '#ffffff', 
-                color: isDark ? '#ffffff' : '#0f172a',
-                opacity: 1 
+                color: isDark ? '#ffffff' : '#0f172a'
             }}
           >
             {/* Close Button */}
@@ -348,27 +377,24 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               </div>
             </div>
 
-            {/* 🟢 STATS GRID (FIXED COLORS) */}
+            {/* 🟢 STATS GRID */}
             <div className={`grid grid-cols-3 gap-2 mb-8`}>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1">
                         <Trophy className="w-3 h-3" /> Win
                     </div>
-                    {/* Fixed: Dynamic text color */}
                     <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDriver.probability}</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1">
                         <BarChart3 className="w-3 h-3" /> Podium
                     </div>
-                    {/* Fixed: Dynamic text color */}
                     <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDriver.podiumProbability}</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1">
                         <TrendingUp className="w-3 h-3" /> Points
                     </div>
-                    {/* Fixed: Dynamic text color */}
                     <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDriver.pointsProbability}</div>
                 </div>
             </div>
@@ -388,7 +414,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                     {selectedDriver.reasons.positive.length === 0 && (
                           <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                             <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
-                            <span>Standard performance expected based on current form.</span>
+                            <span>Analysis complete. Standard race pace expected.</span>
                         </li>
                     )}
                 </ul>
