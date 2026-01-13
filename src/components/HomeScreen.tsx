@@ -24,6 +24,7 @@ interface NewsArticle {
   Team?: string; 
 }
 
+// Consistent Spacing
 const SPACING = {
   SECTION_MARGIN: 'mb-8',
   SECTION_PADDING: 'px-3',
@@ -45,6 +46,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [hasModalOpen, setHasModalOpen] = useState(false);
+  
   const [refreshTrigger, setRefreshTrigger] = useState(0); 
 
   // --- MODAL DETECTION ---
@@ -88,7 +90,6 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
   // --- LISTENER FOR CHATBOT UPDATES ---
   useEffect(() => {
     const handleNewsUpdateSignal = () => {
-        console.log("📣 HomeScreen: Received update signal!");
         setRefreshTrigger(prev => prev + 1);
     };
     window.addEventListener('newsUpdated', handleNewsUpdateSignal);
@@ -177,14 +178,13 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
       data-home-screen="true"
     >
       
-      {/* --- HEADER --- */}
-      {/* 🟢 FIX 1: Max Z-Index + Translate Trick for Hardware Acceleration */}
+      {/* --- HEADER (FIXED POSITION) --- */}
+      {/* 🟢 CHANGED: Fixed position, top-0, z-50 to ensure it floats above all scrolling content */}
       <div 
-        className="sticky top-0 z-[100] px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-md"
+        className="fixed top-0 left-0 right-0 z-50 px-6 pt-12 pb-6 shadow-2xl flex justify-between items-center transition-colors duration-300 backdrop-blur-md"
         style={{ 
             background: 'linear-gradient(to right, #7f1d1d, #450a0a)',
-            transform: 'translate3d(0,0,0)', // Fixes Safari rendering issues
-            position: 'sticky'
+            transform: 'translateZ(0)' // Hardware accel
         }}
       >
         <div>
@@ -198,12 +198,12 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         </div>
       </div>
 
-      {/* 🟢 FIX 2: WRAPPER TRAP */}
-      {/* This 'relative z-0' container forces ALL content (Hero, Pulse, News) into a lower layer */}
-      <main className="relative z-0">
+      {/* --- CONTENT WRAPPER --- */}
+      {/* 🟢 CHANGED: Added paddingTop (pt-[140px]) to account for the fixed header height */}
+      <div className="pt-[140px] pb-10">
         
         {/* Race Week Badge */}
-        <div className="mt-6 mb-8 px-6">
+        <div className="mb-4 px-6">
             <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
             <h1 className="text-[10px] uppercase tracking-widest opacity-80">
                 Race Week Hub
@@ -212,7 +212,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
         </div>
 
         {/* Content Body */}
-        <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP} mt-2 pb-10 pt-2`}>
+        <div className={`${SPACING.SECTION_PADDING} ${SPACING.CONTENT_GAP}`}>
             
             {/* --- 1. HERO CARD --- */}
             <section className={SPACING.SECTION_MARGIN}>
@@ -275,7 +275,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                         ))}
                     </div>
 
-                    {/* PREDICT BUTTON (Fixed for Modal) */}
+                    {/* PREDICT BUTTON */}
                     <Button 
                         onClick={() => onPredictRace(nextRace.id)}
                         disabled={hasModalOpen}
@@ -400,7 +400,7 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
             </div>
             </section>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
