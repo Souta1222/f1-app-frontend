@@ -1,521 +1,472 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
-import { drivers } from '../lib/data'; 
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Camera, Upload, X, Sparkles, Filter } from 'lucide-react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
+import { ThemeToggle } from './ThemeToggle'; 
+import logo from '../styles/logo.png'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 NGROK BYPASS IMAGE COMPONENT
-const NgrokImage = ({ src, alt, className, style, onError }: any) => {
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
+// 🟢 TEAMS LIST
+const teams = [
+  { name: 'All Teams', value: 'all', color: '#FFFFFF' },
+  { name: 'Red Bull', value: 'Red Bull', color: '#3671C6' },
+  { name: 'McLaren', value: 'McLaren', color: '#FF8000' },
+  { name: 'Mercedes', value: 'Mercedes', color: '#27F4D2' },
+  { name: 'Ferrari', value: 'Ferrari', color: '#E8002D' },
+  { name: 'Williams', value: 'Williams', color: '#64C4FF' },
+  { name: 'Aston Martin', value: 'Aston Martin', color: '#229971' },
+  { name: 'Racing Bulls', value: 'Racing Bulls', color: '#6692FF' },
+  { name: 'Haas', value: 'Haas', color: '#B6BABD' },
+  { name: 'Kick Sauber', value: 'Kick Sauber', color: '#52E252' },
+  { name: 'Alpine', value: 'Alpine', color: '#FF87BC' },
+  { name: 'Retired Drivers', value: 'retired_teams', color: '#888888' },
+];
+
+const statusOptions = [
+  { label: 'All Drivers', value: 'all' },
+  { label: 'Active', value: 'Active' },
+  { label: 'Retired', value: 'retired' },
+];
+
+const teamColors: Record<string, string> = {
+  'Red Bull': '#3671C6',
+  'McLaren': '#FF8000',
+  'Mercedes': '#27F4D2',
+  'Ferrari': '#E8002D',
+  'Williams': '#64C4FF',
+  'Aston Martin': '#229971',
+  'Racing Bulls': '#6692FF',
+  'Haas': '#B6BABD',
+  'Kick Sauber': '#52E252',
+  'Alpine': '#FF87BC',
+  'default': '#888888'
+};
+
+interface Driver {
+  id: string;
+  name: string;
+  team: string;
+  nationality: string;
+  number: string;
+  age: number;
+  f1_debut: number;
+  world_champs: number;
+  race_starts: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  status: string;
+  teamColor?: string;
+  stats?: Record<string, string | number>;
+  images?: string[];
+}
+
+// 🟢 REFINED COMPONENT: HybridSecureImage
+// Tries to fetch securely (for remote/ngrok), falls back to standard (for local), then placeholder
+const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
+  const [imageSrc, setImageSrc] = useState<string | null>(null); // Start null to show loading or nothing
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    if (!src || !src.startsWith('http')) {
-      setImgSrc(src);
-      return;
-    }
-
     let isMounted = true;
-    fetch(src, {
-      headers: { 
-        'ngrok-skip-browser-warning': 'true',
-      }
-    })
-    .then(async res => {
-      if (!res.ok) throw new Error("Failed");
-      const blob = await res.blob();
-      if (isMounted) setImgSrc(URL.createObjectURL(blob));
-    })
-    .catch(() => {
-      if (isMounted) setImgSrc(src); 
-    });
+    let objectUrl: string | null = null;
 
-    return () => { isMounted = false; };
+    const fetchImage = async () => {
+      try {
+        // 1. Try fetching with the special Ngrok header (Fixes Mobile/Remote)
+        const response = await fetch(src, {
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+          mode: 'cors'
+        });
+
+        if (!response.ok) throw new Error('Fetch failed');
+
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        
+        if (isMounted) setImageSrc(objectUrl);
+
+      } catch (err) {
+        // 2. If secure fetch fails (CORS/Network), fall back to direct URL
+        // This fixes Localhost where you might have cookies/cache
+        if (isMounted) {
+            console.warn(`Secure load failed for ${src}, falling back to direct URL.`);
+            setImageSrc(src);
+        }
+      }
+    };
+
+    if (src) fetchImage();
+
+    return () => {
+      isMounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [src]);
+
+  // 3. Fallback handler for the standard <img> tag
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (!isError) {
+        setIsError(true);
+        // Final fallback to placeholder
+        e.currentTarget.src = 'https://via.placeholder.com/300x400/333333/ffffff?text=No+Photo';
+    }
+  };
+
+  if (!imageSrc) {
+     // Show a placeholder or loading state while deciding
+     return <div className={`bg-gray-200 animate-pulse ${className}`} />;
+  }
 
   return (
     <img 
-      src={imgSrc || src} 
+      src={imageSrc} 
       alt={alt} 
       className={className} 
-      style={style}
-      onError={onError}
+      loading="lazy"
+      onError={handleError}
     />
   );
 };
 
-// --- SHARED 2026 SCHEDULE ---
-const SCHEDULE_2026 = [
-  { "round": 1, "circuit": "Melbourne, Australia" },
-  { "round": 2, "circuit": "Shanghai, China" },
-  { "round": 3, "circuit": "Suzuka, Japan" },
-  { "round": 4, "circuit": "Sakhir, Bahrain" },
-  { "round": 5, "circuit": "Jeddah, Saudi Arabia" },
-  { "round": 6, "circuit": "Miami, USA" },
-  { "round": 7, "circuit": "Imola, Italy" },
-  { "round": 8, "circuit": "Monaco" },
-  { "round": 9, "circuit": "Barcelona, Spain" },
-  { "round": 10, "circuit": "Montreal, Canada" },
-  { "round": 11, "circuit": "Spielberg, Austria" },
-  { "round": 12, "circuit": "Silverstone, UK" },
-  { "round": 13, "circuit": "Budapest, Hungary" },
-  { "round": 14, "circuit": "Spa-Francorchamps, Belgium" },
-  { "round": 15, "circuit": "Zandvoort, Netherlands" },
-  { "round": 16, "circuit": "Monza, Italy" },
-  { "round": 17, "circuit": "Baku, Azerbaijan" },
-  { "round": 18, "circuit": "Marina Bay, Singapore" },
-  { "round": 19, "circuit": "Austin, USA" },
-  { "round": 20, "circuit": "Mexico City, Mexico" },
-  { "round": 21, "circuit": "São Paulo, Brazil" },
-  { "round": 22, "circuit": "Las Vegas, USA" },
-  { "round": 23, "circuit": "Lusail, Qatar" },
-  { "round": 24, "circuit": "Yas Marina, UAE" }
-];
-
-// --- STATIC DATA (2025) ---
-const RESULTS_2025 = [
-  { position: 1, driver: "Lando Norris", team: "McLaren", wins: 8, points: 420, status: "Champion", details: "Clinched his maiden World Title with 8 wins and 19 podiums." },
-  { position: 2, driver: "Max Verstappen", team: "Red Bull", wins: 9, points: 380, status: "Active", details: "Won the most races (9), but reliability issues cost him the title." },
-  { position: 3, driver: "Oscar Piastri", team: "McLaren", wins: 7, points: 300, status: "Active", details: "Breakout season with 7 wins, securing Constructors' Title." },
-  { position: 4, driver: "George Russell", team: "Mercedes", wins: 3, points: 250, status: "Active", details: "Led Mercedes charge with 3 wins." },
-  { position: 5, driver: "Charles Leclerc", team: "Ferrari", wins: 0, points: 200, status: "Active", details: "Dominated qualifying but struggled with race pace." },
-  { position: 6, driver: "Lewis Hamilton", team: "Ferrari", wins: 0, points: 180, status: "Active", details: "Solid debut in Red; consistent points finishes." },
-];
-
-interface RaceResult {
-  position: number;
-  driver: string;
-  driverId?: string | null;
-  team: string;
-  points?: number;
-  wins?: number;
-  status: string;
-  details?: string;
-  probability?: string;
-  podiumProbability?: string;
-  pointsProbability?: string;
-  reasons?: { positive: string[], negative: string[] };
-}
-
-interface RaceDetailsScreenProps {
-  raceId: string;
-  onBack: () => void;
-}
-
-// Helper to find ID from Name
-const getDriverIdByName = (fullName: string) => {
-  const entry = Object.values(drivers).find(d => d.name === fullName);
-  return entry ? entry.id : null;
-};
-
-// 🟢 NEW: Helper to check if driver is retired (to filter predictions)
-const isDriverRetired = (fullName: string) => {
-    const entry = Object.values(drivers).find(d => d.name === fullName);
-    // If we have status 'Retired' or the driver is known to be retired
-    if (entry && (entry.status === 'Retired' || entry.isRetired)) return true;
-    return false;
-};
-
-const getTeamColor = (team: string) => {
-  if (!team) return '#666666';
-  const t = team.toLowerCase();
-  if (t.includes('red bull')) return '#3671C6';
-  if (t.includes('ferrari')) return '#D92A32';
-  if (t.includes('mercedes')) return '#00A19C';
-  if (t.includes('mclaren')) return '#FF8000';
-  if (t.includes('aston')) return '#006F62';
-  if (t.includes('williams')) return '#005AFF';
-  if (t.includes('alpine')) return '#FF87BC';
-  if (t.includes('haas')) return '#B6BABD';
-  if (t.includes('sauber') || t.includes('kick')) return '#52E252';
-  if (t.includes('rb') || t.includes('racing bulls')) return '#6692FF';
-  return '#666666';
-};
-
-const formatDriverNameForImage = (driverName: string): string => {
-  if (!driverName) return '';
-  return driverName.toLowerCase().replace(/\s+/g, '_');
-};
-
-export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
+export function DriversScreen() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const safeId = String(raceId || '');
-  let year = '2024'; 
-  let round = '1'; 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [driversList, setDriversList] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const yearMatch = safeId.match(/\b(202\d)\b/); 
-  if (yearMatch) year = yearMatch[1];
-  else {
-      const parts = safeId.split('-');
-      if (parts[0] && parts[0].length === 4 && !isNaN(Number(parts[0]))) year = parts[0];
-  }
-
-  const roundMatch = safeId.match(/round-(\d+)/i);
-  if (roundMatch) round = roundMatch[1];
-
-  const is2025 = safeId.includes('2025-summary') || year === '2025';
-  const is2026 = year === '2026';
-  const shouldFetch = !is2025; 
-
-  const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedPrediction, setSelectedPrediction] = useState<RaceResult | null>(null);
-
+  // 🟢 Fetch drivers
   useEffect(() => {
-    if (!shouldFetch) return;
-
-    const fetchResults = async () => {
-      setLoading(true);
+    const fetchDrivers = async () => {
       try {
-        const headers = { 
-            "ngrok-skip-browser-warning": "true",
-            "Content-Type": "application/json"
-        };
-
-        let rawData: any = null;
-
-        if (is2026) {
-            const raceInfo = SCHEDULE_2026.find(r => r.round === parseInt(round));
-            const circuitName = raceInfo ? raceInfo.circuit : "Unknown";
-            
-            const res = await fetch(`${API_BASE}/predict`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ circuit_name: circuitName })
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                rawData = data.predictions; 
-            }
-        } 
-        else {
-            const res = await fetch(`${API_BASE}/race_results?year=${year}&round=${round}`, { method: "GET", headers });
-            if (res.ok) rawData = await res.json();
-            else {
-                const resFallback = await fetch(`${API_BASE}/race/${raceId}/results`, { headers });
-                if (resFallback.ok) rawData = await resFallback.json();
-            }
-        }
-
-        const cleanData: RaceResult[] = [];
+        console.log("🔄 Fetching drivers from API...");
+        const response = await fetch(`${API_BASE}/drivers/all`, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
         
-        if (Array.isArray(rawData)) {
-            for (const item of rawData) {
-                if (item && typeof item === 'object') {
-                    const isPred = item.probability !== undefined || is2026;
-                    const driverName = isPred ? item.driver?.name : String(item.Driver || item.driver || 'Unknown');
-                    
-                    // 🟢 FILTER: Skip retired drivers for 2026 predictions
-                    if (is2026 && isDriverRetired(driverName)) {
-                        continue;
-                    }
-
-                    if (is2026 && item.probability) {
-                        const winVal = parseFloat(item.probability);
-                        
-                        let podiumVal = item.podium_probability 
-                            ? parseFloat(item.podium_probability) 
-                            : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
-                        
-                        let pointsVal = item.points_probability
-                            ? parseFloat(item.points_probability)
-                            : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
-
-                        if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
-                        if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
-
-                        cleanData.push({
-                            position: parseInt(item.position || '0'),
-                            driver: driverName,
-                            driverId: getDriverIdByName(driverName),
-                            team: item.driver?.team || String(item.team || 'Unknown'),
-                            probability: item.probability,
-                            podiumProbability: podiumVal.toFixed(1),
-                            pointsProbability: pointsVal.toFixed(1),
-                            reasons: item.reasons || { positive: [], negative: [] },
-                            status: 'Predicted',
-                            details: item.reasons?.positive?.[0] || "AI Analysis pending"
-                        });
-                    } else {
-                        cleanData.push({
-                            position: parseInt(item.Position || item.position || '0'),
-                            driver: driverName,
-                            driverId: getDriverIdByName(driverName), 
-                            team: isPred ? item.driver?.team : String(item.Team || item.team || 'Unknown'),
-                            points: item.Points ? parseFloat(item.Points) : undefined,
-                            status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
-                            wins: item.wins ? parseInt(item.wins) : undefined,
-                            probability: isPred ? String(item.probability) : undefined,
-                            podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
-                            pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
-                            reasons: item.reasons,
-                            details: isPred ? (item.reasons?.positive?.[0] || "AI Analysis pending") : item.details
-                        });
-                    }
-                }
-            }
-
-            // 🟢 RE-NUMBERING: If we filtered out drivers in 2026, positions might be skipped (1, 3, 4...).
-            // We need to re-assign positions sequentially.
-            if (is2026) {
-                cleanData.forEach((item, index) => {
-                    item.position = index + 1;
-                });
-            }
-
-            setFetchedResults(cleanData);
+        if (response.ok) {
+          const result = await response.json();
+          const driversArray = result.drivers || [];
+          
+          if (driversArray.length === 0) {
+            console.warn("⚠️ No drivers returned from API");
+            setLoading(false);
+            return;
+          }
+          
+          const mappedDrivers = driversArray.map((driver: any) => {
+            const team = driver.team || "Unknown";
+            return {
+              id: driver.id || driver.Abbr || "UNK",
+              name: driver.name || driver.Full_Name || "Unknown",
+              team: team,
+              nationality: driver.country || driver.Nationality || "Unknown",
+              number: String(driver.number || "0"),
+              age: Number(driver.age || 0),
+              f1_debut: Number(driver.debut || 0),
+              world_champs: Number(driver.championships || 0),
+              race_starts: Number(driver.starts || 0),
+              wins: Number(driver.wins || 0),
+              podiums: Number(driver.podiums || 0),
+              poles: Number(driver.poles || 0),
+              status: driver.status || (driver.F1_Retired === 'Active' ? 'Active' : 'Retired'),
+              teamColor: teamColors[team] || teamColors.default,
+              stats: {
+                'Wins': Number(driver.wins || 0),
+                'Podiums': Number(driver.podiums || 0),
+                'Poles': Number(driver.poles || 0),
+                'Starts': Number(driver.starts || 0)
+              }
+            };
+          });
+          
+          setDriversList(mappedDrivers);
         }
-      } catch (e) { 
-        console.error("Fetch Error:", e); 
+      } catch (error) {
+        console.error('🔥 Error fetching drivers:', error);
       } finally {
         setLoading(false);
       }
     };
+    
+    fetchDrivers();
+  }, []);
 
-    fetchResults();
-  }, [safeId, year, round, shouldFetch, raceId, is2026]);
+  // 🟢 Filter logic
+  const filteredDrivers = useMemo(() => {
+    return driversList.filter((driver) => {
+      const matchesSearch = 
+        driver.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        driver.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        driver.nationality.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        driver.id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesTeam = 
+        selectedTeam === 'all' || 
+        driver.team === selectedTeam ||
+        (selectedTeam === 'retired_teams' && driver.status !== 'Active');
+      
+      const matchesStatus = 
+        selectedStatus === 'all' ||
+        (selectedStatus === 'Active' && driver.status === 'Active') ||
+        (selectedStatus === 'retired' && driver.status !== 'Active');
+      
+      return matchesSearch && matchesTeam && matchesStatus;
+    });
+  }, [driversList, searchQuery, selectedTeam, selectedStatus]);
 
-  const displayList = useMemo(() => {
-      if (is2025) return RESULTS_2025;
-      return fetchedResults;
-  }, [is2025, fetchedResults]);
+  // 🟢 Upload Logic
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setUploadedImage(reader.result as string);
+      reader.readAsDataURL(file);
 
-  const headerTitle = is2025 ? "2025 Standings" : (is2026 ? "AI Prediction" : `Round ${round}`);
-  const subTitle = is2025 ? "Season Summary" : (is2026 ? `2026 Season (Round ${round})` : `${year} Official Results`);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch(`${API_BASE}/identify-driver`, {
+          method: 'POST',
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+          },
+          body: formData,
+        });
+        
+        const data = await response.json();
+
+        if (data.success && data.driver_id) {
+            // Find matched driver in existing list
+            let matchedDriver = driversList.find(d => d.id === data.driver_id);
+            
+            // Build the driver object
+            const enhancedDriver = {
+                ...matchedDriver,
+                id: data.driver_id,
+                name: data.driver_info?.name || matchedDriver?.name || data.driver_id,
+                team: data.driver_info?.team || matchedDriver?.team || "Unknown",
+                nationality: data.driver_info?.country || matchedDriver?.nationality || "Unknown",
+                number: String(data.driver_info?.number || matchedDriver?.number || "0"),
+                age: Number(data.driver_info?.age || matchedDriver?.age || 0),
+                wins: Number(data.driver_info?.wins || matchedDriver?.wins || 0),
+                podiums: Number(data.driver_info?.podiums || matchedDriver?.podiums || 0),
+                poles: Number(data.driver_info?.poles || matchedDriver?.poles || 0),
+                world_champs: Number(data.driver_info?.world_champs || matchedDriver?.world_champs || 0),
+                status: "Active",
+                teamColor: teamColors[data.driver_info?.team || matchedDriver?.team || "default"] || teamColors.default,
+                stats: {
+                   'Wins': Number(data.driver_info?.wins || matchedDriver?.wins || 0),
+                   'Podiums': Number(data.driver_info?.podiums || matchedDriver?.podiums || 0)
+                }
+            } as Driver;
+
+            setSelectedDriver(enhancedDriver);
+            alert(`✅ Match found: ${enhancedDriver.name} (${data.confidence})`);
+        } else {
+          alert(`❌ ${data.message || "Identification failed"}`);
+          setSelectedDriver(null);
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Server connection failed.");
+      }
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (!inputMessage.trim()) return;
+    setChatMessages(prev => [...prev, { role: 'user', content: inputMessage }]);
+    setInputMessage('');
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "I'm the Grand Prix Guru! (Demo Response)" }]);
+    }, 1000);
+  };
 
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
-    : { backgroundColor: '#f0f2f5', color: '#0f172a' };
-
-  const podium = displayList.slice(0, 3);
-
-  // 🟢 Helper for Image - CORRECTED PATH & NGROK BYPASS
-  const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
-    const [imgError, setImgError] = useState(false);
-    
-    let src = null;
-    if (id && !imgError) {
-      // ✅ FIX: Use correct /driver-faces/ path + .png extension
-      src = `${API_BASE}/driver-faces/${id}.png`;
-    } else if (driverName && !imgError) {
-      const formattedName = formatDriverNameForImage(driverName);
-      src = `${API_BASE}/driver-faces/${formattedName}.png`;
-    }
-    
-    return (
-      <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
-        {src && !imgError ? (
-            <NgrokImage 
-              src={src} 
-              alt={alt} 
-              className="w-full h-full object-cover object-top" 
-              onError={() => setImgError(true)}
-            />
-        ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                <User className="w-8 h-8" />
-            </div>
-        )}
-      </div>
-    );
-  };
+    : { backgroundColor: '#E2E8F0', color: '#1e293b', backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '24px 24px' };
 
   return (
-    <>
-      <div className="fixed inset-0 z-[1000] flex flex-col font-sans w-full h-full transition-colors duration-300" style={containerStyle}>
-        {/* HEADER */}
-        <div 
-          className="flex-shrink-0 z-50 shadow-lg flex items-center gap-4 px-4 py-4" 
-          style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)', color: 'white' }}
-        >
-          <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md border border-white/10">
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-          <div>
-            <h1 className="font-black text-xl leading-none uppercase tracking-tight">{headerTitle}</h1>
-            <span className="text-xs opacity-80 font-bold uppercase tracking-widest mt-1 inline-block text-red-100">
-              {subTitle}
-            </span>
-          </div>
-        </div>
-
-        {/* CONTENT */}
-        <div className="flex-grow overflow-y-auto">
-          <div className="px-4 py-6 space-y-3">
-            {loading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                    <div className="animate-spin text-4xl mb-4 text-red-600">🏎️</div>
-                    <p className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>
-                        {is2026 ? "Running AI Simulation..." : "Fetching Results..."}
-                    </p>
-                </div>
-            ) : (
-                <>
-                {/* 2026 PODIUM */}
-                {is2026 && displayList.length > 0 && (
-                    <div className={`mb-8 relative ${isDark ? 'bg-neutral-900/50' : 'bg-white/50'} rounded-2xl p-4 border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
-                        <h2 className="uppercase font-bold tracking-widest text-[10px] mb-6 text-center flex items-center justify-center gap-2 text-gray-500">
-                            <Trophy className="w-3 h-3 text-yellow-500" /> Projected Podium
-                        </h2>
-                        
-                        <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
-                            {/* P2 */}
-                            {podium[1] && (
-                                <div className="flex flex-col items-center w-1/3">
-                                    <PodiumDriverImage id={podium[1].driverId} driverName={podium[1].driver} alt={podium[1].driver} />
-                                    <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
-                                        <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
-                                        <div className="mt-2 font-black text-2xl opacity-30">2</div>
-                                        <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[1].driver.split(' ').pop()}</div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* P1 */}
-                            {podium[0] && (
-                                <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
-                                    <Crown className="w-6 h-6 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
-                                    <PodiumDriverImage id={podium[0].driverId} driverName={podium[0].driver} alt={podium[0].driver} />
-                                    <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-36 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
-                                        <div className="mt-3 font-black text-4xl">1</div>
-                                        <div className="text-xs font-black uppercase text-center leading-tight">{podium[0].driver.split(' ').pop()}</div>
-                                        <div className="mt-1 px-2 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700">
-                                            {podium[0].probability}%
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* P3 */}
-                            {podium[2] && (
-                                <div className="flex flex-col items-center w-1/3">
-                                    <PodiumDriverImage id={podium[2].driverId} driverName={podium[2].driver} alt={podium[2].driver} />
-                                    <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-10 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
-                                        <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
-                                        <div className="mt-2 font-black text-2xl opacity-30">3</div>
-                                        <div className="text-[10px] font-black uppercase text-center leading-tight">{podium[2].driver.split(' ').pop()}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* LIST */}
-                {displayList.map((result, index) => (
-                    <div 
-                        key={index}
-                        className={`p-3 rounded-xl shadow-sm flex flex-col gap-2 border transition-all active:scale-[0.99] ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-white hover:shadow-md'}`}
-                        style={{ borderLeft: `4px solid ${getTeamColor(result.team)}` }}
-                        onClick={() => is2026 && setSelectedPrediction(result)} 
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
-                                result.position === 1 ? 'bg-yellow-100 text-yellow-700' : 
-                                result.position === 2 ? 'bg-slate-200 text-slate-700' : 
-                                result.position === 3 ? 'bg-orange-100 text-orange-800' : 
-                                (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500')
-                            }`}>
-                                {result.position === 1 ? <Trophy className="w-4 h-4" /> : result.position}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <div className={`font-bold truncate text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{result.driver}</div>
-                                <div className={`text-[10px] font-bold uppercase tracking-wide truncate ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>{result.team}</div>
-                            </div>
-
-                            <div className="text-right">
-                                {is2026 ? (
-                                    <div className="font-mono font-bold text-sm text-purple-500">
-                                        {result.probability}% <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WIN</span>
-                                    </div>
-                                ) : (
-                                    result.wins !== undefined && result.wins > 0 ? (
-                                        <div className="font-mono font-bold text-sm text-blue-500">
-                                            {result.wins} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>WINS</span>
-                                        </div>
-                                    ) : (
-                                        <div className="font-mono font-bold text-sm text-green-500">
-                                            +{result.points} <span className={`text-[9px] font-sans uppercase ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>PTS</span>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                            {is2026 && <Info className="w-4 h-4 text-gray-400" />}
-                        </div>
-
-                        {!is2026 && result.details && (
-                            <div className={`mt-1 pl-12 pr-2 py-2 rounded-lg text-xs leading-relaxed flex gap-2 items-start ${isDark ? 'bg-neutral-800/50 text-neutral-400' : 'bg-slate-50 text-slate-600'}`}>
-                                <Info className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />
-                                <span>{result.details}</span>
-                            </div>
-                        )}
-                    </div>
-                ))}
-                </>
-            )}
-
-            {!loading && displayList.length === 0 && (
-                <div className={`text-center py-12 rounded-2xl border border-dashed ${isDark ? 'border-neutral-800 bg-neutral-900/50' : 'border-slate-200 bg-white'}`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
-                        <Flag className={`w-6 h-6 ${isDark ? 'text-neutral-600' : 'text-slate-400'}`} />
-                    </div>
-                    <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No results available</p>
-                    <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Check back later</p>
-                </div>
-            )}
-          </div>
-        </div>
+    <div className="min-h-screen pb-24 font-sans w-full transition-colors duration-300" style={containerStyle}>
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-6 pt-12 pb-6 shadow-lg flex justify-between items-center transition-colors duration-300" style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)' }}>
+        <div><div className="flex items-center gap-2 mt-6"><img src={logo} alt="F1INSIDER" className="h-8 w-auto" /></div></div>
+        <div className="flex items-center gap-3"><ThemeToggle /></div>
       </div>
 
-      {/* MODAL */}
-      {selectedPrediction && (
-        <div className="fixed inset-0 z-[1060] flex items-center justify-center p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedPrediction(null)} />
-          <div className={`relative z-[1070] w-full max-w-lg rounded-2xl shadow-2xl p-8 pt-14 pb-10 border ${isDark ? 'border-neutral-700' : 'border-slate-200'}`} style={{ backgroundColor: isDark ? '#171717' : '#ffffff', color: isDark ? '#ffffff' : '#0f172a', maxHeight: '90vh', overflowY: 'auto' }}>
-            <button onClick={() => setSelectedPrediction(null)} className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-500'}`}>
-              <X className="w-5 h-5" />
+      {/* Content */}
+      <div className="pt-32 px-4"> 
+        <div className="mb-8 pl-2">
+          <div className="inline-block px-3 py-2 rounded-xl bg-green-500 text-white dark:bg-red-600 dark:text-red-100">
+            <h1 className="text-[10px] uppercase tracking-widest opacity-80">F1 DRIVERS HALL OF FAME</h1>
+          </div>
+          <p className={`text-xs mt-2 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>{filteredDrivers.length} drivers • Active & Retired Legends</p>
+        </div>
+
+        {/* Status Filter */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {statusOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setSelectedStatus(option.value)}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-tight transition-all border ${selectedStatus === option.value ? 'bg-red-600 text-white border-red-600 shadow-md' : isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-slate-500 border-white shadow-sm'}`}
+            >
+              <Filter className="inline-block w-3 h-3 mr-2" />{option.label}
             </button>
-            <div className="flex items-start gap-4 mb-8 pr-12">
-              <div className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: getTeamColor(selectedPrediction.team) }} />
-              <div className="flex flex-col">
-                <h2 className="text-3xl font-bold leading-tight tracking-tight">{selectedPrediction.driver}</h2>
-                <span className={`text-sm font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>{selectedPrediction.team}</span>
+          ))}
+        </div>
+
+        {/* AI Feature Card */}
+        <div className="mb-6">
+          <button onClick={() => setUploadDialogOpen(true)} className={`w-full border-2 rounded-xl p-6 transition-all text-left group active:scale-[0.99] ${isDark ? 'bg-gradient-to-br from-red-900/20 to-neutral-900 border-red-900/50 hover:border-red-600' : 'bg-white border-white hover:border-red-200 shadow-md hover:shadow-lg'}`}>
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-14 h-14 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"><Camera className="w-7 h-7 text-white" /></div>
+              <div className="flex-1">
+                <h3 className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Identify Driver AI</h3>
+                <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>Upload a photo to instantly see stats & predictions</p>
               </div>
             </div>
-            <div className={`grid grid-cols-3 gap-2 mb-8`}>
-                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1"><Trophy className="w-3 h-3" /> Win</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.probability || '0'}%</div>
-                </div>
-                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1"><BarChart3 className="w-3 h-3" /> Podium</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.podiumProbability || '0'}%</div>
-                </div>
-                <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1"><TrendingUp className="w-3 h-3" /> Points</div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.pointsProbability || '0'}%</div>
-                </div>
-            </div>
-            <div>
-                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
-                <ul className="space-y-4">
-                    {selectedPrediction.reasons?.positive?.map((r, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm leading-relaxed"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>{r}</span></li>
-                    ))}
-                    {(!selectedPrediction.reasons?.positive || selectedPrediction.reasons.positive.length === 0) && (
-                          <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}><div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" /><span>Standard performance expected.</span></li>
-                    )}
-                </ul>
-            </div>
+          </button>
+        </div>
+
+        {/* Search & Team Filters */}
+        <div className="mb-4 relative">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-neutral-500' : 'text-slate-400'}`} />
+          <Input type="text" placeholder="Search drivers..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className={`w-full pl-10 h-12 border transition-all ${isDark ? 'bg-neutral-900/80 border-neutral-800 text-white' : 'bg-white border-white text-slate-900'}`} />
+        </div>
+        <div className="mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {teams.map((team) => (
+              <button key={team.value} onClick={() => setSelectedTeam(team.value)} className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-tight transition-all border ${selectedTeam === team.value ? 'bg-red-600 text-white border-red-600 shadow-md' : isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-slate-500 border-white shadow-sm'}`}>
+                {team.value !== 'all' && team.value !== 'retired_teams' && <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: team.color }} />}{team.name}
+              </button>
+            ))}
           </div>
         </div>
-      )}
-    </>
+
+        {/* Loading & Grid */}
+        {loading ? (
+          <div className="text-center py-12"><p className={isDark ? "text-neutral-500" : "text-slate-400"}>Loading drivers...</p></div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filteredDrivers.map((driver) => (
+              <div key={driver.id} className={`rounded-xl border overflow-hidden transition-all relative group ${isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-white shadow-sm'} ${driver.status !== 'Active' ? 'opacity-80' : ''}`}>
+                <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                  
+                  {/* 🟢 USE HYBRID SECURE IMAGE HERE */}
+                  <HybridSecureImage 
+                    src={`${API_BASE}/driver-faces/${driver.id}.png`}
+                    alt={driver.name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                  
+                  <div className="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
+                    <span className="text-white font-bold text-xs">{driver.number}</span>
+                  </div>
+                  {driver.status !== 'Active' && <div className="absolute top-2 left-2 bg-gray-800/80 text-white text-[10px] px-2 py-1 rounded-full">RETIRED</div>}
+                </div>
+                <div className="p-3">
+                  <div className="mb-1"><h3 className={`text-sm font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{driver.name}</h3></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-3 rounded-full" style={{ backgroundColor: driver.teamColor }} />
+                    <span className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>{driver.team}</span>
+                  </div>
+                  <div className="flex gap-3 mt-2 text-[10px]">
+                    <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>🏆 {driver.world_champs}</span>
+                    <span className={isDark ? 'text-neutral-400' : 'text-slate-500'}>🏁 {driver.wins}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className={`max-w-[90vw] max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isDark ? '!bg-neutral-900 border-neutral-800 text-white' : '!bg-white border-slate-200 text-slate-900'}`} style={{ backgroundColor: isDark ? '#171717' : '#ffffff' }}>
+          <DialogHeader>
+            <DialogTitle>Identify Driver AI</DialogTitle>
+            <DialogDescription>Upload a photo to identify.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!uploadedImage ? (
+              <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-xl cursor-pointer ${isDark ? 'border-neutral-700 bg-neutral-950' : 'border-slate-300 bg-slate-50'}`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-10 h-10 mb-3 text-neutral-400" /><p className="text-sm">Tap to upload</p>
+                </div>
+                <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+              </label>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative w-full h-72">
+                  <img src={uploadedImage} alt="Uploaded" className="w-full h-full object-cover object-top rounded-xl" />
+                  <button onClick={() => { setUploadedImage(null); setSelectedDriver(null); }} className="absolute top-2 right-2 w-9 h-9 bg-black/70 rounded-full flex items-center justify-center text-white"><X className="w-5 h-5" /></button>
+                </div>
+                {selectedDriver && (
+                  <div className={`rounded-xl p-4 border mt-2 ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden">
+                             {/* 🟢 USE HYBRID SECURE IMAGE IN DIALOG */}
+                             <HybridSecureImage src={`${API_BASE}/driver-faces/${selectedDriver.id}.png`} alt={selectedDriver.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <h3 className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDriver.name.toUpperCase()}</h3>
+                            <p className="text-xs text-neutral-500">{selectedDriver.team}</p>
+                        </div>
+                    </div>
+                    <Button onClick={() => { setSearchQuery(selectedDriver.name); setUploadDialogOpen(false); setUploadedImage(null); setSelectedDriver(null); }} className="w-full bg-red-600 text-white font-bold rounded-xl">View Full Profile</Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Sheet */}
+      <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+        <SheetContent side="bottom" className="bg-neutral-900/95 border-t-2 border-red-600 text-white h-[85vh] rounded-t-3xl p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-800">
+            <SheetTitle>Grand Prix Guru</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-red-600' : 'bg-neutral-800'}`}>
+                  <p className="text-sm">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-4 bg-neutral-900">
+            <div className="flex gap-2">
+              <Input value={inputMessage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputMessage(e.target.value)} className="bg-neutral-800 border-neutral-700 text-white" placeholder="Ask AI about drivers..." />
+              <Button onClick={handleSendMessage} className="bg-red-600"><Sparkles className="w-4 h-4" /></Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
