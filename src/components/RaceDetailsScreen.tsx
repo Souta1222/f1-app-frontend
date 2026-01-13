@@ -53,33 +53,33 @@ const NgrokImage: React.FC<NgrokImageProps> = ({ src, alt, className, style, onE
   );
 };
 
-// --- SHARED 2026 SCHEDULE ---
+// 🟢 FIXED SCHEDULE: Names now match Backend Keys (Bahrain, Jeddah, Interlagos, etc.)
 const SCHEDULE_2026 = [
-  { "round": 1, "circuit": "Melbourne, Australia" },
-  { "round": 2, "circuit": "Shanghai, China" },
-  { "round": 3, "circuit": "Suzuka, Japan" },
-  { "round": 4, "circuit": "Sakhir, Bahrain" },
-  { "round": 5, "circuit": "Jeddah, Saudi Arabia" },
-  { "round": 6, "circuit": "Miami, USA" },
-  { "round": 7, "circuit": "Imola, Italy" },
-  { "round": 8, "circuit": "Monaco" },
-  { "round": 9, "circuit": "Barcelona, Spain" },
-  { "round": 10, "circuit": "Montreal, Canada" },
-  { "round": 11, "circuit": "Spielberg, Austria" },
-  { "round": 12, "circuit": "Silverstone, UK" },
-  { "round": 13, "circuit": "Budapest, Hungary" },
-  { "round": 14, "circuit": "Spa-Francorchamps, Belgium" },
-  { "round": 15, "circuit": "Zandvoort, Netherlands" },
-  { "round": 16, "circuit": "Monza, Italy" },
-  { "round": 17, "circuit": "Baku, Azerbaijan" },
-  { "round": 18, "circuit": "Marina Bay, Singapore" },
-  { "round": 19, "circuit": "Austin, USA" },
-  { "round": 20, "circuit": "Mexico City, Mexico" },
-  { "round": 21, "circuit": "São Paulo, Brazil" },
-  { "round": 22, "circuit": "Las Vegas, USA" },
-  { "round": 23, "circuit": "Lusail, Qatar" },
-  { "round": 24, "circuit": "Yas Marina, UAE" }
-];
+    { "round": 1, "circuit": "Melbourne, Australia" },     // Matches 'Melbourne'
+    { "round": 2, "circuit": "Shanghai, China" },          // Matches 'Shanghai'
+    { "round": 3, "circuit": "Suzuka, Japan" },            // Matches 'Suzuka'
+    { "round": 4, "circuit": "Bahrain" },                  // Matches 'Bahrain'
+    { "round": 5, "circuit": "Jeddah, Saudi Arabia" },     // Matches 'Jeddah'
+    { "round": 6, "circuit": "Miami, USA" },               // Matches 'Miami'
+    { "round": 7, "circuit": "Imola, Italy" },             // Matches 'Imola'
+    { "round": 8, "circuit": "Monaco" },                   // Matches 'Monaco'
+    { "round": 9, "circuit": "Barcelona, Spain" },         // Matches 'Barcelona'
+    { "round": 10, "circuit": "Montreal, Canada" },        // Matches 'Montreal'
+    { "round": 11, "circuit": "Spielberg, Austria" },      // Matches 'Spielberg'
+    { "round": 12, "circuit": "Silverstone, UK" },         // Matches 'Silverstone'
+    { "round": 13, "circuit": "Hungaroring, Hungary" },    // CHANGED: Matches 'Hungaroring'
+    { "round": 14, "circuit": "Spa-Francorchamps, Belgium"}, // Matches 'Spa'
+    { "round": 15, "circuit": "Zandvoort, Netherlands" },  // Matches 'Zandvoort'
+    { "round": 16, "circuit": "Monza, Italy" },            // Matches 'Monza'
+    { "round": 17, "circuit": "Baku, Azerbaijan" },        // Matches 'Baku'
+    { "round": 18, "circuit": "Singapore" },               // Matches 'Singapore'
+    { "round": 19, "circuit": "Austin, USA" },             // Matches 'Austin'
+    { "round": 20, "circuit": "Mexico City, Mexico" },     // Matches 'Mexico City'
+    { "round": 21, "circuit": "Interlagos, Brazil" },      // CHANGED: Matches 'Interlagos' (was São Paulo)
+    { "round": 22, "circuit": "Las Vegas, USA" },          // Matches 'Las Vegas'
+    { "round": 23, "circuit": "Qatar" },                   // Matches 'Qatar'
+    { "round": 24, "circuit": "Abu Dhabi, UAE" }           // CHANGED: Matches 'Abu Dhabi' (was Yas Marina)
+  ];
 
 // --- STATIC DATA (2025) ---
 const RESULTS_2025 = [
