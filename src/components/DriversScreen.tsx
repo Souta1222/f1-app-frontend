@@ -8,11 +8,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle'; 
 import logo from '../styles/logo.png'; 
-
-// 🟢 CONFIG - Use HTTPS
+import { getDriverImage } from '../lib/images';
+// 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 GLOBAL IMAGE CACHE
+// 🟢 GLOBAL CACHE
 const imageCache = new Map<string, string>();
 
 // 🟢 Teams list
@@ -87,109 +87,38 @@ export function DriversScreen() {
   const [inputMessage, setInputMessage] = useState('');
   const [driversList, setDriversList] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // 🟢 Track failed images to avoid retries
-  const failedImages = useRef<Set<string>>(new Set());
 
-  // 🟢 SMART: Get image with CORS-friendly approach
+  // 🟢 SIMPLE: Get driver image URL
   const getDriverImage = (driverId: string): string => {
-    // Check cache first
-    if (imageCache.has(driverId)) {
-      return imageCache.get(driverId)!;
-    }
-    
-    // 🎯 CRITICAL: Add timestamp to bypass cache
-    const timestamp = Date.now();
-    
-    // Current drivers usually have .png
-    const currentDrivers = ['VER', 'HAM', 'NOR', 'LEC', 'PIA', 'RUS', 'SAI', 'ALO', 'PER', 'STR', 'GAS', 'TSU', 'OCO', 'BOT', 'ZHO', 'MAG', 'HUL', 'ALB'];
-    
-    let baseUrl;
-    
-    if (currentDrivers.includes(driverId)) {
-      baseUrl = `${API_BASE}/driver-faces/${driverId}.png`;
-    } else {
-      // Retired drivers often have numbered .jpg
-      baseUrl = `${API_BASE}/driver-faces/${driverId}1.jpg`;
-    }
-    
-    // 🎯 ADD TIMESTAMP to prevent caching issues
-    const imageUrl = `${baseUrl}?t=${timestamp}`;
-    
-    // Cache it
-    imageCache.set(driverId, imageUrl);
-    return imageUrl;
+    // ✅ ALWAYS use /driver-faces/ URL
+    return `${API_BASE}/driver-faces/${driverId}.png`;
   };
-
-  // 🟢 Handle image error with CORS-aware fallback
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, driverId: string) => {
-    const imgElement = e.currentTarget as HTMLImageElement;
-    const currentSrc = imgElement.src;
-    
-    // Mark as failed
-    failedImages.current.add(currentSrc);
-    
-    console.log(`🔄 Image failed: ${currentSrc.split('?')[0]}`);
-    
-    // 🎯 SMART FALLBACK STRATEGY
-    const fallbackPatterns = [];
-    const baseUrl = currentSrc.split('?')[0]; // Remove query params
-    
-    if (baseUrl.includes('.png')) {
-      // PNG failed, try JPG
-      fallbackPatterns.push(baseUrl.replace('.png', '.jpg'));
-    }
-    
-    if (baseUrl.includes('.jpg') && !baseUrl.match(/\d+\.jpg$/)) {
-      // Simple JPG failed, try numbered
-      fallbackPatterns.push(baseUrl.replace('.jpg', '1.jpg'));
-    }
-    
-    // Try all numbered versions
-    for (let i = 1; i <= 3; i++) {
-      if (baseUrl.includes('.png')) {
-        fallbackPatterns.push(baseUrl.replace('.png', `${i}.png`));
-      }
-      if (baseUrl.includes('.jpg')) {
-        fallbackPatterns.push(baseUrl.replace(/\d*\.jpg$/, `${i}.jpg`));
-      }
-    }
-    
-    // Add timestamp to each fallback
-    const timestamp = Date.now();
-    const fallbackUrls = fallbackPatterns.map(url => `${url}?t=${timestamp}`);
-    
-    // Try next available URL
-    for (const fallbackUrl of fallbackUrls) {
-      if (!failedImages.current.has(fallbackUrl)) {
-        console.log(`🔄 Trying fallback: ${fallbackUrl.split('?')[0]}`);
-        imgElement.src = fallbackUrl;
-        imageCache.set(driverId, fallbackUrl);
-        return;
-      }
-    }
-    
-    // All failed, use base64 placeholder
-    console.log(`❌ All image attempts failed for ${driverId}, using placeholder`);
-    imgElement.src = getBase64Placeholder();
-    imageCache.set(driverId, getBase64Placeholder());
-  };
-
-  // 🟢 Base64 placeholder (no CORS issues)
-  const getBase64Placeholder = (): string => {
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRyaXZlcjwvdGV4dD48L3N2Zz4=';
-  };
-
-  // 🟢 Pre-load images for better UX
-  const preloadImage = (url: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous'; // 🎯 CRITICAL: Enable CORS for images
-      img.src = url;
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-    });
-  };
+  // 🟢 Handle image loading error
+ // UPDATE the handleImageError function:
+ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, driverId: string) => {
+  const imgElement = e.currentTarget as HTMLImageElement;
+  const currentSrc = imgElement.src;
+  
+  // 🎯 ONLY use /driver-faces/ URLs (no /drivers/)
+  const fallbackUrls = [
+    `${API_BASE}/driver-faces/${driverId}.jpg`,
+    `${API_BASE}/driver-faces/${driverId}1.jpg`,
+    `${API_BASE}/driver-faces/${driverId}2.jpg`,
+    `${API_BASE}/driver-faces/${driverId}3.jpg`,
+    `${API_BASE}/driver-faces/${driverId}1.png`,
+    `${API_BASE}/driver-faces/${driverId}2.png`,
+    `${API_BASE}/driver-faces/${driverId}3.png`,
+    'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
+  ];
+  
+  // Find which URL failed and try next one
+  const allUrls = [`${API_BASE}/driver-faces/${driverId}.png`, ...fallbackUrls];
+  const currentIndex = allUrls.findIndex(url => url === currentSrc);
+  
+  if (currentIndex < allUrls.length - 1) {
+    imgElement.src = allUrls[currentIndex + 1];
+  }
+};
 
   // 🟢 Fetch drivers
   useEffect(() => {
@@ -208,6 +137,13 @@ export function DriversScreen() {
           
           console.log(`📊 Found ${driversArray.length} drivers`);
           
+          if (driversArray.length === 0) {
+            console.warn("⚠️ No drivers returned from API");
+            setLoading(false);
+            return;
+          }
+          
+          // Map backend fields to frontend fields
           const mappedDrivers = driversArray.map((driver: any) => {
             const team = driver.team || "Unknown";
             
@@ -226,17 +162,16 @@ export function DriversScreen() {
               poles: Number(driver.poles || driver.Poles || 0),
               status: driver.status || (driver.F1_Retired === 'Active' ? 'Active' : 'Retired'),
               teamColor: teamColors[team] || teamColors.default,
+              stats: {
+                'Wins': Number(driver.wins || driver.Wins || 0),
+                'Podiums': Number(driver.podiums || driver.Podiums || 0),
+                'Poles': Number(driver.poles || driver.Poles || 0),
+                'Starts': Number(driver.starts || driver.Race_Starts || 0)
+              }
             };
           });
           
           setDriversList(mappedDrivers);
-          
-          // 🎯 Pre-load first 8 images for better UX
-          const driversToPreload = mappedDrivers.slice(0, 8);
-          driversToPreload.forEach(driver => {
-            const imageUrl = getDriverImage(driver.id);
-            preloadImage(imageUrl);
-          });
           
         } else {
           console.error('❌ Failed to fetch drivers from API');
@@ -513,7 +448,7 @@ export function DriversScreen() {
           </div>
         ) : (
           <>
-            {/* 🎯 DRIVER GRID - FIXED IMAGE LOADING */}
+            {/* Driver Grid */}
             <div className="grid grid-cols-2 gap-3">
               {filteredDrivers.map((driver) => (
                 <div
@@ -532,7 +467,6 @@ export function DriversScreen() {
                       className="w-full h-full object-cover object-top"
                       onError={(e) => handleImageError(e, driver.id)}
                       loading="lazy"
-                      crossOrigin="anonymous" // 🎯 CRITICAL: Enable CORS
                     />
                     
                     {/* Number Badge */}
