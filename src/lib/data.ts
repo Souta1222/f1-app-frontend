@@ -211,7 +211,7 @@ export const races: Race[] = [
     id: "australian-gp-2026", 
     round: 11,
     name: "Australian Grand Prix (2026)",
-    circuit: "Albert Park Grand Prix Circuit",
+    circuit: "Melbourne, Australia",
     date: "2026-03-08", 
     time: "12:00 PM",
     flag: "🇦🇺",
