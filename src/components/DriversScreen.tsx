@@ -99,22 +99,21 @@ export function DriversScreen() {
       }
     }
     
-    // Use CORRECT path: /driver-faces/
+    // SMART ORDER: Simple first, then numbered
     const fallbackPatterns = [
+      `${API_BASE}/driver-faces/${driverId}.png`,  // Most common
+      `${API_BASE}/driver-faces/${driverId}.jpg`,  // Alternative simple
+      `${API_BASE}/driver-faces/${driverId}1.png`, // Numbered 1
       `${API_BASE}/driver-faces/${driverId}1.jpg`,
+      `${API_BASE}/driver-faces/${driverId}2.png`, // Numbered 2
       `${API_BASE}/driver-faces/${driverId}2.jpg`,
+      `${API_BASE}/driver-faces/${driverId}3.png`, // Numbered 3
       `${API_BASE}/driver-faces/${driverId}3.jpg`,
-      `${API_BASE}/driver-faces/${driverId}1.png`,
-      `${API_BASE}/driver-faces/${driverId}2.png`,
-      `${API_BASE}/driver-faces/${driverId}3.png`,
-      `${API_BASE}/driver-faces/${driverId}.jpg`,
-      `${API_BASE}/driver-faces/${driverId}.png`,
       'https://via.placeholder.com/300x400/333333/ffffff?text=Driver+Photo'
     ];
     
     return fallbackPatterns[0];
   };
-
   // 🟢 Rotate to next image
   const rotateDriverImage = (driverId: string) => {
     const images = driverImages[driverId] || [];
