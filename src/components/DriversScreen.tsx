@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, Camera, Upload, X, Sparkles, Filter, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Camera, Upload, X, Sparkles, Filter } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -67,35 +67,37 @@ interface Driver {
   images?: string[];
 }
 
-// 🟢 NEW COMPONENT: SecureImage
-// This component fetches the image with headers to bypass Ngrok warning
-const SecureImage = ({ src, alt, className, fallbackSrc }: { src: string, alt: string, className?: string, fallbackSrc?: string }) => {
-  const [imageSrc, setImageSrc] = useState<string>('https://via.placeholder.com/300x400/333333/ffffff?text=Loading...');
-  const [hasError, setHasError] = useState(false);
+// 🟢 REFINED COMPONENT: HybridSecureImage
+// Tries to fetch securely (for remote/ngrok), falls back to standard (for local), then placeholder
+const HybridSecureImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
+  const [imageSrc, setImageSrc] = useState<string | null>(null); // Start null to show loading or nothing
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    let objectUrl: string | null = null;
 
     const fetchImage = async () => {
       try {
+        // 1. Try fetching with the special Ngrok header (Fixes Mobile/Remote)
         const response = await fetch(src, {
-          headers: {
-            'ngrok-skip-browser-warning': 'true', // 🔑 THE KEY FIX
-          },
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+          mode: 'cors'
         });
 
-        if (!response.ok) throw new Error('Failed to load');
+        if (!response.ok) throw new Error('Fetch failed');
 
         const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-
+        objectUrl = URL.createObjectURL(blob);
+        
         if (isMounted) setImageSrc(objectUrl);
+
       } catch (err) {
+        // 2. If secure fetch fails (CORS/Network), fall back to direct URL
+        // This fixes Localhost where you might have cookies/cache
         if (isMounted) {
-          console.log(`Failed to load secure image: ${src}`);
-          setHasError(true);
-          if (fallbackSrc) setImageSrc(fallbackSrc);
-          else setImageSrc('https://via.placeholder.com/300x400/333333/ffffff?text=No+Image');
+            console.warn(`Secure load failed for ${src}, falling back to direct URL.`);
+            setImageSrc(src);
         }
       }
     };
@@ -104,10 +106,23 @@ const SecureImage = ({ src, alt, className, fallbackSrc }: { src: string, alt: s
 
     return () => {
       isMounted = false;
-      // Cleanup blob URLs to avoid memory leaks
-      if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [src]);
+
+  // 3. Fallback handler for the standard <img> tag
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    if (!isError) {
+        setIsError(true);
+        // Final fallback to placeholder
+        e.currentTarget.src = 'https://via.placeholder.com/300x400/333333/ffffff?text=No+Photo';
+    }
+  };
+
+  if (!imageSrc) {
+     // Show a placeholder or loading state while deciding
+     return <div className={`bg-gray-200 animate-pulse ${className}`} />;
+  }
 
   return (
     <img 
@@ -115,6 +130,7 @@ const SecureImage = ({ src, alt, className, fallbackSrc }: { src: string, alt: s
       alt={alt} 
       className={className} 
       loading="lazy"
+      onError={handleError}
     />
   );
 };
@@ -240,30 +256,38 @@ export function DriversScreen() {
         const data = await response.json();
 
         if (data.success && data.driver_id) {
-            // Find driver logic...
+            // Find matched driver in existing list
+            let matchedDriver = driversList.find(d => d.id === data.driver_id);
+            
+            // Build the driver object
             const enhancedDriver = {
-                // ... (simplified for brevity, logic remains same as your original)
-                ...driversList.find(d => d.id === data.driver_id) || {},
-                // if we need to merge backend info:
-                name: data.driver_info.name,
-                team: data.driver_info.team,
-                // ... map other fields
+                ...matchedDriver,
+                id: data.driver_id,
+                name: data.driver_info?.name || matchedDriver?.name || data.driver_id,
+                team: data.driver_info?.team || matchedDriver?.team || "Unknown",
+                nationality: data.driver_info?.country || matchedDriver?.nationality || "Unknown",
+                number: String(data.driver_info?.number || matchedDriver?.number || "0"),
+                age: Number(data.driver_info?.age || matchedDriver?.age || 0),
+                wins: Number(data.driver_info?.wins || matchedDriver?.wins || 0),
+                podiums: Number(data.driver_info?.podiums || matchedDriver?.podiums || 0),
+                poles: Number(data.driver_info?.poles || matchedDriver?.poles || 0),
+                world_champs: Number(data.driver_info?.world_champs || matchedDriver?.world_champs || 0),
+                status: "Active",
+                teamColor: teamColors[data.driver_info?.team || matchedDriver?.team || "default"] || teamColors.default,
+                stats: {
+                   'Wins': Number(data.driver_info?.wins || matchedDriver?.wins || 0),
+                   'Podiums': Number(data.driver_info?.podiums || matchedDriver?.podiums || 0)
+                }
             } as Driver;
 
-             // Fallback if not found in list but returned by AI
-             if (!enhancedDriver.id) {
-                 enhancedDriver.id = data.driver_id;
-                 enhancedDriver.name = data.driver_info.name;
-                 enhancedDriver.teamColor = teamColors[data.driver_info.team] || teamColors.default;
-             }
-
             setSelectedDriver(enhancedDriver);
-            alert(`✅ Match found: ${data.driver_info.name} (${data.confidence})`);
+            alert(`✅ Match found: ${enhancedDriver.name} (${data.confidence})`);
         } else {
           alert(`❌ ${data.message || "Identification failed"}`);
           setSelectedDriver(null);
         }
       } catch (error) {
+        console.error(error);
         alert("Server connection failed.");
       }
     }
@@ -348,12 +372,14 @@ export function DriversScreen() {
             {filteredDrivers.map((driver) => (
               <div key={driver.id} className={`rounded-xl border overflow-hidden transition-all relative group ${isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-white shadow-sm'} ${driver.status !== 'Active' ? 'opacity-80' : ''}`}>
                 <div className={`relative aspect-square ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
-                  {/* 🟢 USE SECURE IMAGE HERE */}
-                  <SecureImage 
+                  
+                  {/* 🟢 USE HYBRID SECURE IMAGE HERE */}
+                  <HybridSecureImage 
                     src={`${API_BASE}/driver-faces/${driver.id}.png`}
                     alt={driver.name}
                     className="w-full h-full object-cover object-top"
                   />
+                  
                   <div className="absolute top-2 right-2 w-8 h-8 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20">
                     <span className="text-white font-bold text-xs">{driver.number}</span>
                   </div>
@@ -400,9 +426,9 @@ export function DriversScreen() {
                 {selectedDriver && (
                   <div className={`rounded-xl p-4 border mt-2 ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="flex items-center gap-4 mb-4">
-                        {/* 🟢 USE SECURE IMAGE IN DIALOG TOO */}
                         <div className="w-16 h-16 rounded-full overflow-hidden">
-                             <SecureImage src={`${API_BASE}/driver-faces/${selectedDriver.id}.png`} alt={selectedDriver.name} className="w-full h-full object-cover" />
+                             {/* 🟢 USE HYBRID SECURE IMAGE IN DIALOG */}
+                             <HybridSecureImage src={`${API_BASE}/driver-faces/${selectedDriver.id}.png`} alt={selectedDriver.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
                             <h3 className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDriver.name.toUpperCase()}</h3>
@@ -421,7 +447,24 @@ export function DriversScreen() {
       {/* Chat Sheet */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
         <SheetContent side="bottom" className="bg-neutral-900/95 border-t-2 border-red-600 text-white h-[85vh] rounded-t-3xl p-0">
-           {/* Chat content (omitted for brevity, same as original) */}
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-neutral-800">
+            <SheetTitle>Grand Prix Guru</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-red-600' : 'bg-neutral-800'}`}>
+                  <p className="text-sm">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-4 bg-neutral-900">
+            <div className="flex gap-2">
+              <Input value={inputMessage} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputMessage(e.target.value)} className="bg-neutral-800 border-neutral-700 text-white" placeholder="Ask AI about drivers..." />
+              <Button onClick={handleSendMessage} className="bg-red-600"><Sparkles className="w-4 h-4" /></Button>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
     </div>
