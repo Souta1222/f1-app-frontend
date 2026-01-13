@@ -22,7 +22,6 @@ const NgrokImage = ({ src, alt, className, style, onError }: any) => {
     fetch(src, {
       headers: { 
         'ngrok-skip-browser-warning': 'true',
-        'Content-Type': 'application/json'
       }
     })
     .then(async res => {
@@ -291,21 +290,20 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
-    // Try multiple image sources - FIXED PATH
+    // 🟢 FIXED: Try multiple image sources
     let src = null;
     if (id && !imgError) {
-      // Point to backend endpoint directly
-      src = `${API_BASE}/driver_image/${id}`;
+      // ✅ Corrected: matches backend endpoint "/driver-faces/{ID}.png"
+      src = `${API_BASE}/driver-faces/${id}.png`;
     } else if (driverName && !imgError) {
       // Fallback
       const formattedName = formatDriverNameForImage(driverName);
-      src = `${API_BASE}/driver_image/${formattedName}`;
+      src = `${API_BASE}/driver-faces/${formattedName}.png`;
     }
     
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src && !imgError ? (
-            // 🟢 UPDATED: Use NgrokImage component
             <NgrokImage 
               src={src} 
               alt={alt} 
