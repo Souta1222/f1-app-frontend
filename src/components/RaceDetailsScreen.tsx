@@ -87,6 +87,12 @@ const getTeamColor = (team: string) => {
   return '#666666';
 };
 
+// Helper to convert driver name to image-friendly format
+const formatDriverNameForImage = (driverName: string): string => {
+  if (!driverName) return '';
+  return driverName.toLowerCase().replace(/\s+/g, '_');
+};
+
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -114,6 +120,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<RaceResult | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // 4. Fetch Effect - RESTORED ORIGINAL LOGIC
   useEffect(() => {
@@ -240,13 +247,32 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image
-  const PodiumDriverImage = ({ id, alt }: { id: string | null | undefined, alt: string }) => {
-    const src = id ? `/drivers/${id}.png` : null;
+  // Helper for Image - IMPROVED WITH ERROR HANDLING
+  // Helper for Image - FIXED PATH
+const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
+    const [imgError, setImgError] = useState(false);
+    
+    // Try multiple image sources - FIXED PATH
+    let src = null;
+    if (id && !imgError) {
+      // Try with the official ID first - FIXED: use driver_faces folder
+      src = `/driver_faces/${id}.png`;
+    } else if (driverName && !imgError) {
+      // Fallback: try with formatted driver name - FIXED: use driver_faces folder
+      const formattedName = formatDriverNameForImage(driverName);
+      src = `/driver_faces/${formattedName}.png`;
+    }
+    
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
-        {src ? (
-            <img src={src} alt={alt} className="w-full h-full object-cover object-top" />
+        {src && !imgError ? (
+            <img 
+              src={src} 
+              alt={alt} 
+              className="w-full h-full object-cover object-top" 
+              onError={() => setImgError(true)}
+              loading="lazy"
+            />
         ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
                 <User className="w-8 h-8" />
@@ -299,7 +325,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             {/* P2 (Rank 2) - Left - MEDIUM (h-24) */}
                             {podium[1] && (
                                 <div className="flex flex-col items-center w-1/3">
-                                    <PodiumDriverImage id={podium[1].driverId} alt={podium[1].driver} />
+                                    <PodiumDriverImage id={podium[1].driverId} driverName={podium[1].driver} alt={podium[1].driver} />
                                     <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-24 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                         <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[1].team) }} />
                                         <div className="mt-2 font-black text-2xl opacity-30">2</div>
@@ -312,7 +338,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             {podium[0] && (
                                 <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
                                     <Crown className="w-6 h-6 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
-                                    <PodiumDriverImage id={podium[0].driverId} alt={podium[0].driver} />
+                                    <PodiumDriverImage id={podium[0].driverId} driverName={podium[0].driver} alt={podium[0].driver} />
                                     <div className={`w-full rounded-t-lg border-t-4 border-x shadow-xl flex flex-col items-center h-36 relative ${isDark ? 'bg-neutral-800 border-neutral-700 border-t-yellow-500' : 'bg-white border-slate-300 border-t-yellow-400'}`}>
                                         <div className="mt-3 font-black text-4xl">1</div>
                                         <div className="text-xs font-black uppercase text-center leading-tight">{podium[0].driver.split(' ').pop()}</div>
@@ -326,7 +352,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             {/* P3 (Rank 3) - Right - SHORT (h-16) */}
                             {podium[2] && (
                                 <div className="flex flex-col items-center w-1/3">
-                                    <PodiumDriverImage id={podium[2].driverId} alt={podium[2].driver} />
+                                    <PodiumDriverImage id={podium[2].driverId} driverName={podium[2].driver} alt={podium[2].driver} />
                                     <div className={`w-full rounded-t-lg border-t border-x shadow-sm flex flex-col items-center h-10 relative ${isDark ? 'bg-neutral-800 border-neutral-700' : 'bg-white border-slate-300'}`}>
                                         <div className="w-full h-1.5 rounded-t-lg" style={{ backgroundColor: getTeamColor(podium[2].team) }} />
                                         <div className="mt-2 font-black text-2xl opacity-30">3</div>
