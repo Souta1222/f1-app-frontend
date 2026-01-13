@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
-import { drivers } from '../lib/data'; 
 // @ts-ignore
 import { useTheme } from './../components/ThemeContext.tsx'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
 
-// 🟢 NEW: NGROK BYPASS IMAGE COMPONENT
-// This fetches the image using JS headers to skip the Ngrok warning page
-const NgrokImage = ({ src, alt, className, style, onError }: any) => {
+// 🟢 1. STRICT TYPES FOR IMAGES
+interface NgrokImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  src: string;
+  alt: string;
+}
+
+// 🟢 2. NGROK BYPASS IMAGE COMPONENT (Fixed Types)
+const NgrokImage: React.FC<NgrokImageProps> = ({ src, alt, className, style, onError }) => {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,7 +26,6 @@ const NgrokImage = ({ src, alt, className, style, onError }: any) => {
     fetch(src, {
       headers: { 
         'ngrok-skip-browser-warning': 'true',
-        'Content-Type': 'application/json'
       }
     })
     .then(async res => {
@@ -95,10 +98,10 @@ interface RaceResult {
   wins?: number;
   status: string;
   details?: string;
-  probability?: string; // Win %
-  podiumProbability?: string; // Podium % (added)
-  pointsProbability?: string; // Points % (added)
-  reasons?: { positive: string[], negative: string[] }; // Prediction Only
+  probability?: string;
+  podiumProbability?: string;
+  pointsProbability?: string;
+  reasons?: { positive: string[], negative: string[] };
 }
 
 interface RaceDetailsScreenProps {
@@ -106,12 +109,7 @@ interface RaceDetailsScreenProps {
   onBack: () => void;
 }
 
-// Helper to find ID from Name
-const getDriverIdByName = (fullName: string) => {
-  const entry = Object.values(drivers).find(d => d.name === fullName);
-  return entry ? entry.id : null;
-};
-
+// 🟢 3. HELPERS (No External Dependencies)
 const getTeamColor = (team: string) => {
   if (!team) return '#666666';
   const t = team.toLowerCase();
@@ -128,17 +126,18 @@ const getTeamColor = (team: string) => {
   return '#666666';
 };
 
-// Helper to convert driver name to image-friendly format
 const formatDriverNameForImage = (driverName: string): string => {
   if (!driverName) return '';
-  return driverName.toLowerCase().replace(/\s+/g, '_');
+  // Convert "Max Verstappen" -> "VER" (Simple approximation) or "Max_Verstappen"
+  // Ideally, backend should provide ID. This is a fallback.
+  return driverName.substring(0, 3).toUpperCase();
 };
 
 export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // 1. SMART ID PARSING
+  // ID Parsing
   const safeId = String(raceId || '');
   let year = '2024'; 
   let round = '1'; 
@@ -157,12 +156,10 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const is2026 = year === '2026';
   const shouldFetch = !is2025; 
 
-  // 3. Data State
   const [fetchedResults, setFetchedResults] = useState<RaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<RaceResult | null>(null);
 
-  // 4. Fetch Effect - RESTORED ORIGINAL LOGIC
   useEffect(() => {
     if (!shouldFetch) return;
 
@@ -176,7 +173,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
         let rawData: any = null;
 
-        // 🟢 PREDICTION FETCH (2026) - ORIGINAL LOGIC
         if (is2026) {
             const raceInfo = SCHEDULE_2026.find(r => r.round === parseInt(round));
             const circuitName = raceInfo ? raceInfo.circuit : "Unknown";
@@ -192,7 +188,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 rawData = data.predictions; 
             }
         } 
-        // 🟢 RESULTS FETCH (2024/23)
         else {
             const res = await fetch(`${API_BASE}/race_results?year=${year}&round=${round}`, { method: "GET", headers });
             if (res.ok) rawData = await res.json();
@@ -202,35 +197,56 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
             }
         }
 
-        // Normalize Data - WITH ENHANCED 2026 PROCESSING
         const cleanData: RaceResult[] = [];
+        
         if (Array.isArray(rawData)) {
+            let positionCounter = 1;
+
             for (const item of rawData) {
                 if (item && typeof item === 'object') {
                     const isPred = item.probability !== undefined || is2026;
-                    const driverName = isPred ? item.driver?.name : String(item.Driver || item.driver || 'Unknown');
                     
-                    // For 2026 predictions, calculate additional probabilities like in PredictionResultsScreen
+                    // 🟢 DRIVER DATA EXTRACTION
+                    // For predictions, API sends: driver: { name, id, team }
+                    // For historical, API sends: Driver: "Name"
+                    
+                    let driverName = "Unknown";
+                    let driverId = null;
+                    let teamName = "Unknown";
+
+                    if (isPred && item.driver && typeof item.driver === 'object') {
+                        driverName = item.driver.name;
+                        driverId = item.driver.id; // API provides ID!
+                        teamName = item.driver.team;
+                    } else {
+                        driverName = String(item.Driver || item.driver || 'Unknown');
+                        teamName = String(item.Team || item.team || 'Unknown');
+                        // No ID in historical usually, relies on fallback
+                    }
+
+                    // 🟢 2026 FILTERING LOGIC
+                    // We removed the 'isDriverRetired' function because it relied on external files.
+                    // Instead, we trust the Backend's /predict endpoint to only return Active drivers.
+                    // If you REALLY need to filter specific names here, add:
+                    // const RETIRED_NAMES = ["Lewis Hamilton", "Fernando Alonso"]; 
+                    // if (is2026 && RETIRED_NAMES.includes(driverName)) continue;
+
                     if (is2026 && item.probability) {
                         const winVal = parseFloat(item.probability);
                         
-                        // Fallback estimation for podium and points probabilities (same as PredictionResultsScreen)
                         let podiumVal = item.podium_probability 
                             ? parseFloat(item.podium_probability) 
-                            : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
+                            : Math.min(99, winVal * 2.5 + (positionCounter <= 3 ? 40 : 0));
                         
                         let pointsVal = item.points_probability
                             ? parseFloat(item.points_probability)
-                            : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
-
-                        if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
-                        if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+                            : Math.min(99, podiumVal * 1.2 + (positionCounter <= 10 ? 30 : 0));
 
                         cleanData.push({
-                            position: parseInt(item.position || '0'),
+                            position: positionCounter, // Use local counter
                             driver: driverName,
-                            driverId: getDriverIdByName(driverName),
-                            team: item.driver?.team || String(item.team || 'Unknown'),
+                            driverId: driverId,
+                            team: teamName,
                             probability: item.probability,
                             podiumProbability: podiumVal.toFixed(1),
                             pointsProbability: pointsVal.toFixed(1),
@@ -238,13 +254,14 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             status: 'Predicted',
                             details: item.reasons?.positive?.[0] || "AI Analysis pending"
                         });
+                        positionCounter++;
                     } else {
-                        // For non-2026 data
+                        // Historical Data
                         cleanData.push({
                             position: parseInt(item.Position || item.position || '0'),
                             driver: driverName,
-                            driverId: getDriverIdByName(driverName), 
-                            team: isPred ? item.driver?.team : String(item.Team || item.team || 'Unknown'),
+                            driverId: driverId, 
+                            team: teamName,
                             points: item.Points ? parseFloat(item.Points) : undefined,
                             status: String(item.status || item.Status || (isPred ? 'Predicted' : 'Finished')),
                             wins: item.wins ? parseInt(item.wins) : undefined,
@@ -252,9 +269,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                             podiumProbability: isPred ? String(item.podium_probability || '0') : undefined,
                             pointsProbability: isPred ? String(item.points_probability || '0') : undefined,
                             reasons: item.reasons,
-                            details: isPred 
-                                ? (item.reasons?.positive?.[0] || "AI Analysis pending") 
-                                : item.details
+                            details: isPred ? (item.reasons?.positive?.[0] || "AI Analysis pending") : item.details
                         });
                     }
                 }
@@ -263,7 +278,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         }
       } catch (e) { 
         console.error("Fetch Error:", e); 
-        // If fetch fails, still set loading to false
       } finally {
         setLoading(false);
       }
@@ -280,32 +294,29 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   const headerTitle = is2025 ? "2025 Standings" : (is2026 ? "AI Prediction" : `Round ${round}`);
   const subTitle = is2025 ? "Season Summary" : (is2026 ? `2026 Season (Round ${round})` : `${year} Official Results`);
 
-  // --- STYLES ---
   const containerStyle = isDark 
     ? { backgroundColor: '#0a0a0a', color: '#ffffff' } 
     : { backgroundColor: '#f0f2f5', color: '#0f172a' };
 
   const podium = displayList.slice(0, 3);
 
-  // Helper for Image - FIXED PATH & NGROK BYPASS
+  // 🟢 Helper for Image - CORRECTED PATH & NGROK BYPASS
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
-    // Try multiple image sources - FIXED PATH
     let src = null;
     if (id && !imgError) {
-      // Point to backend endpoint directly
-      src = `${API_BASE}/driver_image/${id}`;
+      // ✅ Corrected: matches backend endpoint "/driver-faces/{ID}.png"
+      src = `${API_BASE}/driver-faces/${id}.png`;
     } else if (driverName && !imgError) {
-      // Fallback
-      const formattedName = formatDriverNameForImage(driverName);
-      src = `${API_BASE}/driver_image/${formattedName}`;
+      // Fallback: Try 3 letter code or formatted name
+      const formatted = driverName.substring(0, 3).toUpperCase();
+      src = `${API_BASE}/driver-faces/${formatted}.png`;
     }
     
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
         {src && !imgError ? (
-            // 🟢 UPDATED: Use NgrokImage component
             <NgrokImage 
               src={src} 
               alt={alt} 
@@ -324,7 +335,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
   return (
     <>
       <div className="fixed inset-0 z-[1000] flex flex-col font-sans w-full h-full transition-colors duration-300" style={containerStyle}>
-        {/* HEADER - FIXED AT TOP */}
+        {/* HEADER */}
         <div 
           className="flex-shrink-0 z-50 shadow-lg flex items-center gap-4 px-4 py-4" 
           style={{ background: 'linear-gradient(to right, #7f1d1d, #450a0a)', color: 'white' }}
@@ -340,7 +351,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
           </div>
         </div>
 
-        {/* SCROLLABLE CONTENT AREA */}
+        {/* CONTENT */}
         <div className="flex-grow overflow-y-auto">
           <div className="px-4 py-6 space-y-3">
             {loading ? (
@@ -352,7 +363,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 </div>
             ) : (
                 <>
-                {/* 🟢 2026 PREDICTION LAYOUT (PODIUM) */}
+                {/* 2026 PODIUM */}
                 {is2026 && displayList.length > 0 && (
                     <div className={`mb-8 relative ${isDark ? 'bg-neutral-900/50' : 'bg-white/50'} rounded-2xl p-4 border ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
                         <h2 className="uppercase font-bold tracking-widest text-[10px] mb-6 text-center flex items-center justify-center gap-2 text-gray-500">
@@ -360,8 +371,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         </h2>
                         
                         <div className="flex items-end justify-center gap-3 h-56 max-w-sm mx-auto">
-                            
-                            {/* P2 (Rank 2) - Left - MEDIUM (h-24) */}
+                            {/* P2 */}
                             {podium[1] && (
                                 <div className="flex flex-col items-center w-1/3">
                                     <PodiumDriverImage id={podium[1].driverId} driverName={podium[1].driver} alt={podium[1].driver} />
@@ -373,7 +383,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                 </div>
                             )}
 
-                            {/* P1 (Rank 1) - Center - TALL (h-36) */}
+                            {/* P1 */}
                             {podium[0] && (
                                 <div className="flex flex-col items-center w-1/3 z-10 -mx-1 mb-2">
                                     <Crown className="w-6 h-6 text-yellow-400 mb-1 fill-yellow-400 animate-bounce" />
@@ -388,7 +398,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                 </div>
                             )}
 
-                            {/* P3 (Rank 3) - Right - SHORT (h-16) */}
+                            {/* P3 */}
                             {podium[2] && (
                                 <div className="flex flex-col items-center w-1/3">
                                     <PodiumDriverImage id={podium[2].driverId} driverName={podium[2].driver} alt={podium[2].driver} />
@@ -403,7 +413,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     </div>
                 )}
 
-                {/* LIST RESULTS */}
+                {/* LIST */}
                 {displayList.map((result, index) => (
                     <div 
                         key={index}
@@ -443,7 +453,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                                     )
                                 )}
                             </div>
-                            
                             {is2026 && <Info className="w-4 h-4 text-gray-400" />}
                         </div>
 
@@ -458,7 +467,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 </>
             )}
 
-            {/* --- EMPTY STATE --- */}
             {!loading && displayList.length === 0 && (
                 <div className={`text-center py-12 rounded-2xl border border-dashed ${isDark ? 'border-neutral-800 bg-neutral-900/50' : 'border-slate-200 bg-white'}`}>
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
@@ -468,106 +476,47 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-slate-500'}`}>Check back later</p>
                 </div>
             )}
-
           </div>
         </div>
       </div>
 
-      {/* 🟢 CUSTOM MODAL OVERLAY (SAME AS PREDICTIONRESULTSSCREEN) */}
+      {/* MODAL */}
       {selectedPrediction && (
-        <div 
-          className="fixed inset-0 z-[1060] flex items-center justify-center p-4 animate-in fade-in duration-200"
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setSelectedPrediction(null)}
-          />
-          
-          {/* Modal Content - PROPERLY CENTERED */}
-          <div 
-            className={`relative z-[1070] w-full max-w-lg rounded-2xl shadow-2xl p-8 pt-14 pb-10 border ${
-              isDark ? 'border-neutral-700' : 'border-slate-200'
-            }`}
-            style={{ 
-                backgroundColor: isDark ? '#171717' : '#ffffff', 
-                color: isDark ? '#ffffff' : '#0f172a',
-                opacity: 1,
-                maxHeight: '90vh',
-                overflowY: 'auto'
-            }}
-          >
-            {/* Close Button */}
-            <button 
-              onClick={() => setSelectedPrediction(null)}
-              className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${
-                isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-500'
-              }`}
-            >
+        <div className="fixed inset-0 z-[1060] flex items-center justify-center p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedPrediction(null)} />
+          <div className={`relative z-[1070] w-full max-w-lg rounded-2xl shadow-2xl p-8 pt-14 pb-10 border ${isDark ? 'border-neutral-700' : 'border-slate-200'}`} style={{ backgroundColor: isDark ? '#171717' : '#ffffff', color: isDark ? '#ffffff' : '#0f172a', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button onClick={() => setSelectedPrediction(null)} className={`absolute top-4 right-4 p-1 rounded-full transition-colors ${isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-500'}`}>
               <X className="w-5 h-5" />
             </button>
-
-            {/* Header */}
             <div className="flex items-start gap-4 mb-8 pr-12">
-              <div 
-                className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" 
-                style={{ backgroundColor: getTeamColor(selectedPrediction.team) }}
-              />
+              <div className="w-1.5 h-12 rounded-full mt-1 flex-shrink-0" style={{ backgroundColor: getTeamColor(selectedPrediction.team) }} />
               <div className="flex flex-col">
                 <h2 className="text-3xl font-bold leading-tight tracking-tight">{selectedPrediction.driver}</h2>
-                <span className={`text-sm font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                    {selectedPrediction.team}
-                </span>
+                <span className={`text-sm font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>{selectedPrediction.team}</span>
               </div>
             </div>
-
-            {/* 🟢 STATS GRID (SAME AS PREDICTIONRESULTSSCREEN) */}
             <div className={`grid grid-cols-3 gap-2 mb-8`}>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1">
-                        <Trophy className="w-3 h-3" /> Win
-                    </div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {selectedPrediction.probability || '0'}%
-                    </div>
+                    <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1"><Trophy className="w-3 h-3" /> Win</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.probability || '0'}%</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1">
-                        <BarChart3 className="w-3 h-3" /> Podium
-                    </div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {selectedPrediction.podiumProbability || '0'}%
-                    </div>
+                    <div className="text-[10px] font-bold uppercase text-green-500 flex items-center gap-1 mb-1"><BarChart3 className="w-3 h-3" /> Podium</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.podiumProbability || '0'}%</div>
                 </div>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
-                    <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1">
-                        <TrendingUp className="w-3 h-3" /> Points
-                    </div>
-                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {selectedPrediction.pointsProbability || '0'}%
-                    </div>
+                    <div className="text-[10px] font-bold uppercase text-blue-500 flex items-center gap-1 mb-1"><TrendingUp className="w-3 h-3" /> Points</div>
+                    <div className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedPrediction.pointsProbability || '0'}%</div>
                 </div>
             </div>
-
-            {/* Analysis List */}
             <div>
-                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
-                  <TrendingUp className="w-4 h-4"/> AI Analysis
-                </div>
+                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
                 <ul className="space-y-4">
                     {selectedPrediction.reasons?.positive?.map((r, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                            <span>{r}</span>
-                        </li>
+                        <li key={i} className="flex items-start gap-3 text-sm leading-relaxed"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>{r}</span></li>
                     ))}
                     {(!selectedPrediction.reasons?.positive || selectedPrediction.reasons.positive.length === 0) && (
-                          <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                            <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
-                            <span>Standard performance expected based on current form.</span>
-                        </li>
+                          <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}><div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" /><span>Standard performance expected.</span></li>
                     )}
                 </ul>
             </div>
