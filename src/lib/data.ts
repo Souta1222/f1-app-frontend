@@ -129,7 +129,7 @@ export const races: Race[] = [
     id: 'australia',
     round: 3,
     name: 'Australian Grand Prix',
-    circuit: 'Albert Park Circuit',
+    circuit: 'Melbourne, Australia',
     country: 'Australia',
     date: '2025-03-23',
     status: 'finished',
