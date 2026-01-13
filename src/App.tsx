@@ -87,11 +87,23 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-neutral-950 text-white pb-20 relative">
-        {renderScreen()}
-        <ChatWidget />
+      {/* 🟢 FIX 1: Removed 'relative', allow content to flow naturally */}
+      <div className="min-h-screen bg-neutral-950 text-white pb-20">
+        
+        {/* 🟢 FIX 2: Wrapped Content in a specific z-index layer (0) */}
+        {/* This ensures your pages never accidentally cover the Chat/Nav */}
+        <main className="relative z-0">
+            {renderScreen()}
+        </main>
+
+        {/* 🟢 FIX 3: Force High Z-Index for Chat Widget */}
+        <div className="relative z-50">
+            <ChatWidget />
+        </div>
+
+        {/* 🟢 FIX 4: Force Max Z-Index for Bottom Nav */}
         {!selectedRaceId && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-40">
+          <nav className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-800 z-[100]">
             <div className="flex justify-around items-center h-16 max-w-md mx-auto">
               <button onClick={() => handleNavigate('home')} className={`flex flex-col items-center justify-center flex-1 h-full ${currentScreen === 'home' ? 'text-red-500' : 'text-neutral-400'}`}>
                 <Home className="w-6 h-6" /><span className="text-xs mt-1">Home</span>
