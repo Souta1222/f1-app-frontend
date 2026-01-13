@@ -7,7 +7,7 @@ import { FanPulseWidget } from './FanPulseWidget';
 import { useTheme } from './../components/ThemeContext.tsx'; 
 import { ThemeToggle } from './ThemeToggle';
 import logo from '../styles/logo.png'; 
-import { getDriverImage } from '../lib/images';
+
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev'; 
 
@@ -277,13 +277,17 @@ export function HomeScreen({ onNavigateToRace, onPredictRace }: HomeScreenProps)
                     ))}
                   </div>
 
-                  {/* 🟢 NEW EYE-CATCHY PREDICT BUTTON */}
+                  {/* 🟢 FIXED: PREDICT BUTTON */}
+                  {/* Now disabled and non-interactive when modal is open */}
                   <Button 
                     onClick={() => onPredictRace(nextRace.id)}
+                    disabled={hasModalOpen}
+                    tabIndex={hasModalOpen ? -1 : 0}
                     className={`
                         group relative w-full h-14 mt-4 overflow-hidden rounded-xl border-0
                         font-black uppercase tracking-widest text-white shadow-xl transition-all duration-300
                         hover:scale-[1.02] active:scale-[0.98]
+                        ${hasModalOpen ? 'pointer-events-none opacity-40 blur-sm grayscale' : ''} 
                         ${isDark 
                             ? 'bg-gradient-to-r from-red-700 via-red-600 to-orange-600 shadow-red-900/40' 
                             : 'bg-gradient-to-r from-red-600 via-red-500 to-orange-500 shadow-red-500/40'
