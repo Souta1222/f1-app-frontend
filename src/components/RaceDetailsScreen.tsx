@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Flag, Trophy, Info, TrendingUp, User, Crown, X, BarChart3 } from 'lucide-react';
 // @ts-ignore
-import { useTheme } from './../components/ThemeContext.tsx'; 
+import { useTheme } from './../components/ThemeContext.tsx';
+// 🟢 IMPORT DRIVER DATA FOR ID LOOKUP
+import { drivers } from '../lib/data'; 
 
 // 🟢 CONFIG
 const API_BASE = 'https://isreal-falconiform-seasonedly.ngrok-free.dev';
@@ -126,16 +128,26 @@ const getTeamColor = (team: string) => {
   return '#666666';
 };
 
-// Simple ID Helper
-const getDriverIdByName = (name: string) => {
-    // This is a simple fallback if the API doesn't provide an ID directly for older seasons
-    // For 2026 predictions, the API logic handles it.
-    if (!name) return null;
-    return name.substring(0, 3).toUpperCase(); 
-}
+// 🟢 FIX: ROBUST ID LOOKUP (Same as Prediction Screen)
+const getDriverIdByName = (fullName: string) => {
+  if (!fullName) return null;
+  // 1. Try exact match in local data
+  const entry = Object.values(drivers).find(d => d.name === fullName);
+  if (entry) return entry.id;
+
+  // 2. Fallback: Try partial match
+  const partial = Object.values(drivers).find(d => fullName.includes(d.lastname));
+  if (partial) return partial.id;
+
+  // 3. Last Resort
+  return fullName.substring(0, 3).toUpperCase(); 
+};
 
 const formatDriverNameForImage = (driverName: string): string => {
   if (!driverName) return '';
+  // Try to use the smart lookup first
+  const id = getDriverIdByName(driverName);
+  if (id) return id;
   return driverName.substring(0, 3).toUpperCase();
 };
 
@@ -180,7 +192,6 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         let rawData: any = null;
 
         if (is2026) {
-            // 🟢 MATCH PREDICTION FETCH LOGIC EXACTLY
             const raceInfo = SCHEDULE_2026.find(r => r.round === parseInt(round));
             const circuitName = raceInfo ? raceInfo.circuit : "Unknown";
             
@@ -207,48 +218,64 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
         const cleanData: RaceResult[] = [];
         
         if (Array.isArray(rawData)) {
-            // 🟢 APPLY THE SAME MAPPING LOGIC AS PredictionResultScreen
             const mapped = rawData.map((item: any) => {
                  const isPred = is2026 || item.probability !== undefined;
                  
-                 // EXTRACT DRIVER INFO CORRECTLY FOR PREDICTIONS
-                 // The backend returns driver object structure for /predict
                  let driverName = "Unknown";
-                 let driverId = null;
                  let teamName = "Unknown";
+                 let backendId = null;
 
                  if (isPred && item.driver && typeof item.driver === 'object') {
                      driverName = item.driver.name;
-                     driverId = item.driver.id; 
+                     backendId = item.driver.id; 
                      teamName = item.driver.team;
                  } else {
-                     // Historical Fallback
                      driverName = String(item.Driver || item.driver || 'Unknown');
                      teamName = String(item.Team || item.team || 'Unknown');
-                     driverId = getDriverIdByName(driverName);
                  }
 
-                 if (isPred) {
-                    const winVal = parseFloat(item.probability);
-                    
-                    // Same Logic for Probabilities
-                    let podiumVal = item.podium_probability 
-                        ? parseFloat(item.podium_probability) 
-                        : Math.min(99, winVal * 2.5 + (item.position <= 3 ? 40 : 0));
-                    
-                    let pointsVal = item.points_probability
-                        ? parseFloat(item.points_probability)
-                        : Math.min(99, podiumVal * 1.2 + (item.position <= 10 ? 30 : 0));
+                 // 🟢 FIX: Priority to Local Lookup ID, then Backend ID
+                 const resolvedId = getDriverIdByName(driverName) || backendId;
 
-                    if (item.position > 10) pointsVal = Math.max(1, 20 - item.position);
-                    if (item.position > 6) podiumVal = Math.max(0.1, 10 - item.position);
+                 if (isPred) {
+                    // 🟢 FIX: Handle Number/String types safely
+                    const winVal = typeof item.probability === 'number' ? item.probability : parseFloat(item.probability || '0');
+                    
+                    // 🟢 FIX: Use Backend Stats if available (Realistic Mode)
+                    let podiumVal = 0;
+                    let pointsVal = 0;
+
+                    if (item.stats && item.stats.podium_prob) {
+                        podiumVal = item.stats.podium_prob;
+                    } else {
+                        // Fallback math
+                        let pVal = item.podium_probability ? parseFloat(item.podium_probability) : 0;
+                        if (!pVal) {
+                            if (item.position <= 3) pVal = Math.min(99, Math.max(70, winVal * 2));
+                            else if (item.position <= 6) pVal = Math.min(60, Math.max(20, winVal * 4));
+                            else pVal = Math.max(1, 15 - item.position);
+                        }
+                        podiumVal = pVal;
+                    }
+                    
+                    if (item.stats && item.stats.points_prob) {
+                        pointsVal = item.stats.points_prob;
+                    } else {
+                        // Fallback math
+                        let ptVal = item.points_probability ? parseFloat(item.points_probability) : 0;
+                        if (!ptVal) {
+                             if (item.position <= 10) ptVal = Math.min(99, Math.max(60, 100 - (item.position * 5)));
+                             else ptVal = Math.max(5, 40 - ((item.position - 10) * 5));
+                        }
+                        pointsVal = ptVal;
+                    }
 
                     return {
                         position: item.position,
                         driver: driverName,
-                        driverId: driverId,
+                        driverId: resolvedId, // <--- Correct ID
                         team: teamName,
-                        probability: item.probability + "%", // Add % for display consistency
+                        probability: winVal.toFixed(1) + "%",
                         podiumProbability: podiumVal.toFixed(1) + "%",
                         pointsProbability: pointsVal.toFixed(1) + "%",
                         reasons: item.reasons || { positive: [], negative: [] },
@@ -256,11 +283,10 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                         details: item.reasons?.positive?.[0] || "AI Analysis pending"
                     };
                  } else {
-                    // Historical Mapping (Unchanged)
                     return {
                         position: parseInt(item.Position || item.position || '0'),
                         driver: driverName,
-                        driverId: driverId, 
+                        driverId: resolvedId, 
                         team: teamName,
                         points: item.Points ? parseFloat(item.Points) : undefined,
                         status: String(item.status || item.Status || 'Finished'),
@@ -295,14 +321,16 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
 
   const podium = displayList.slice(0, 3);
 
-  // 🟢 Helper for Image - CORRECTED PATH & NGROK BYPASS
+  // 🟢 Helper for Image - UPDATED TO USE ID PREFERENTIALLY
   const PodiumDriverImage = ({ id, driverName, alt }: { id: string | null | undefined, driverName: string, alt: string }) => {
     const [imgError, setImgError] = useState(false);
     
+    // Construct Source
     let src = null;
     if (id && !imgError) {
       src = `${API_BASE}/driver-faces/${id}.png`;
     } else if (driverName && !imgError) {
+      // Last ditch attempt
       const formatted = formatDriverNameForImage(driverName);
       src = `${API_BASE}/driver-faces/${formatted}.png`;
     }
