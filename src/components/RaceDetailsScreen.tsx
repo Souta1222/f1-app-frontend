@@ -531,7 +531,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                 </div>
             </div>
             <div>
-                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
+                {/* <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest"><TrendingUp className="w-4 h-4"/> AI Analysis</div>
                 <ul className="space-y-4">
                     {selectedPrediction.reasons?.positive?.map((r, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm leading-relaxed"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>{r}</span></li>
@@ -539,7 +539,7 @@ export function RaceDetailsScreen({ raceId, onBack }: RaceDetailsScreenProps) {
                     {(!selectedPrediction.reasons?.positive || selectedPrediction.reasons.positive.length === 0) && (
                           <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}><div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" /><span>Standard performance expected.</span></li>
                     )}
-                </ul>
+                </ul> */}
             </div>
           </div>
         </div>
