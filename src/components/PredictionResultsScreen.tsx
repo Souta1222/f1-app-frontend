@@ -396,7 +396,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
             {/* Analysis List */}
             <div>
-                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
+                {/* <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
                   <TrendingUp className="w-4 h-4"/> AI Analysis
                 </div>
                 <ul className="space-y-4">
@@ -412,7 +412,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                             <span>Analysis complete. Standard race pace expected.</span>
                         </li>
                     )}
-                </ul>
+                </ul> */}
             </div>
           </div>
         </div>
