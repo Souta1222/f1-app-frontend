@@ -88,36 +88,43 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
         const backendList = data.predictions || [];
 
         const formattedResults: PredictionCard[] = backendList.map((item: any) => {
+            // 1. Win Probability
             const winVal = typeof item.probability === 'number' ? item.probability : parseFloat(item.probability || '0');
             
-            // Calculate fallback stats
+            // 2. Podium Probability (Prioritize direct backend value)
             let podiumVal = 0;
-            let pointsVal = 0;
-
-            if (item.stats && item.stats.podium_prob) {
+            if (item.podium_probability !== undefined && item.podium_probability !== null) {
+                podiumVal = typeof item.podium_probability === 'number' ? item.podium_probability : parseFloat(item.podium_probability);
+            } else if (item.stats && item.stats.podium_prob) {
+                // Legacy fallback
                 podiumVal = item.stats.podium_prob;
             } else {
+                // Math fallback
                 if (item.position <= 3) podiumVal = Math.min(99, Math.max(70, winVal * 2));
                 else if (item.position <= 6) podiumVal = Math.min(60, Math.max(20, winVal * 4));
                 else podiumVal = Math.max(1, 15 - item.position);
             }
 
-            if (item.stats && item.stats.points_prob) {
+            // 3. Points Probability (Prioritize direct backend value)
+            let pointsVal = 0;
+            if (item.points_probability !== undefined && item.points_probability !== null) {
+                pointsVal = typeof item.points_probability === 'number' ? item.points_probability : parseFloat(item.points_probability);
+            } else if (item.stats && item.stats.points_prob) {
+                // Legacy fallback
                 pointsVal = item.stats.points_prob;
             } else {
+                // Math fallback
                 if (item.position <= 10) pointsVal = Math.min(99, Math.max(60, 100 - (item.position * 5)));
                 else pointsVal = Math.max(5, 40 - ((item.position - 10) * 5));
             }
 
-            // 🔴 FIX IS HERE: Swap the order!
-            // Try to find the official ID from local data FIRST (e.g. finds "HAM" from "Lewis Hamilton")
-            // Only use backend ID (e.g. "LEW") if local lookup fails.
+            // 4. ID Resolution
             const resolvedId = getDriverIdByName(item.driver.name) || item.driver.id;
 
             return {
                 id: item.driver.name,
                 driverName: item.driver.name,
-                driverId: resolvedId, // <--- Using the fixed ID
+                driverId: resolvedId,
                 team: item.driver.team,
                 position: item.position,
                 probability: winVal.toFixed(1) + "%",
@@ -166,7 +173,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
   const podium = predictions.slice(0, 3);
   
   const PodiumDriverImage = ({ id, alt }: { id: string | null, alt: string }) => {
-    // 🟢 IMAGE FIX: Ensure we try to fetch image, handle missing ID gracefully
+    // Ensure we try to fetch image, handle missing ID gracefully
     const src = id ? getDriverImage(id) : null;
     return (
       <div className={`rounded-full overflow-hidden border-2 shadow-lg mb-[-10px] z-10 bg-gray-200 relative ${isDark ? 'border-neutral-700' : 'border-white'}`} style={{ width: '60px', height: '60px' }}>
@@ -372,7 +379,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
               </div>
             </div>
 
-            {/* 🟢 STATS GRID */}
+            {/* 🟢 STATS GRID - Now uses correct API values */}
             <div className={`grid grid-cols-3 gap-2 mb-8`}>
                 <div className={`p-3 rounded-xl border flex flex-col items-center justify-center ${isDark ? 'bg-neutral-800/50 border-neutral-700' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="text-[10px] font-bold uppercase text-yellow-500 flex items-center gap-1 mb-1">
@@ -396,7 +403,7 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
 
             {/* Analysis List */}
             <div>
-                {/* <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-green-600 mb-4 font-bold text-xs uppercase tracking-widest">
                   <TrendingUp className="w-4 h-4"/> AI Analysis
                 </div>
                 <ul className="space-y-4">
@@ -406,13 +413,19 @@ export function PredictionResultsScreen({ raceId, onBack }: PredictionResultsScr
                             <span>{r}</span>
                         </li>
                     ))}
-                    {selectedDriver.reasons.positive.length === 0 && (
+                    {selectedDriver.reasons.negative.map((r, i) => (
+                        <li key={i + 100} className="flex items-start gap-3 text-sm leading-relaxed">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
+                            <span>{r}</span>
+                        </li>
+                    ))}
+                    {selectedDriver.reasons.positive.length === 0 && selectedDriver.reasons.negative.length === 0 && (
                           <li className={`flex items-start gap-3 text-sm leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                             <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                             <span>Analysis complete. Standard race pace expected.</span>
                         </li>
                     )}
-                </ul> */}
+                </ul>
             </div>
           </div>
         </div>
